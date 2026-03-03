@@ -1,0 +1,41 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-cashier:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui-windows
+
+      - name: Restore
+        run: dotnet restore RoyalBakeryCashier/RoyalBakeryCashierTerminal.csproj
+
+      - name: Publish Cashier EXE
+        run: dotnet publish RoyalBakeryCashier/RoyalBakeryCashierTerminal.csproj -c Release -f net9.0-windows10.0.19041.0 -o publish/cashier --self-contained -r win-x64
+
+      - name: Publish API
+        run: dotnet publish RoyalBakeryAPI/RoyalBakeryAPI.csproj -c Release -o publish/api --self-contained -r win-x64
+
+      - name: Upload Cashier EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: RoyalBakeryCashier-Windows
+          path: publish/cashier/
+
+      - name: Upload API
+        uses: actions/upload-artifact@v4
+        with:
+          name: RoyalBakeryAPI-Windows
+          path: publish/api/
