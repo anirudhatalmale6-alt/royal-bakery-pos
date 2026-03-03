@@ -18,6 +18,19 @@ namespace RoyalBakeryCashier
         public static string TerminalName { get; set; } = "Salesman";
 
         /// <summary>
+        /// Database server address. Defaults to localhost.
+        /// Set via terminal.config: Server=192.168.x.x
+        /// </summary>
+        public static string DatabaseServer { get; set; } = "localhost";
+
+        /// <summary>
+        /// Database credentials (optional). If empty, uses Windows Authentication.
+        /// Set via terminal.config: DbUser=sa and DbPassword=yourpass
+        /// </summary>
+        public static string DbUser { get; set; } = "";
+        public static string DbPassword { get; set; } = "";
+
+        /// <summary>
         /// The logged-in user's display name (set after login).
         /// </summary>
         public static string LoggedInUserName { get; set; } = "";
@@ -44,7 +57,7 @@ namespace RoyalBakeryCashier
                 e.SetObserved();
             };
 
-            // Determine mode from config file next to the EXE
+            // Determine mode and DB server from config file next to the EXE
             LoadTerminalConfig();
 
 #if CASHIER_MODE
@@ -52,6 +65,20 @@ namespace RoyalBakeryCashier
 #elif SALESMAN_MODE
             TerminalMode = "Salesman";
 #endif
+
+            // Build connection string from config
+            if (!string.IsNullOrEmpty(DbUser))
+            {
+                // SQL Server Authentication (for remote connections)
+                Data.StockDbContext.ConnectionStringOverride =
+                    $"Server={DatabaseServer};Database=RoyalBakery;User Id={DbUser};Password={DbPassword};TrustServerCertificate=True;Connect Timeout=120;";
+            }
+            else if (DatabaseServer != "localhost")
+            {
+                // Windows Auth to a remote server
+                Data.StockDbContext.ConnectionStringOverride =
+                    $"Server={DatabaseServer};Database=RoyalBakery;Trusted_Connection=True;TrustServerCertificate=True;Connect Timeout=120;";
+            }
 
             // All modes start with login page
             MainPage = new NavigationPage(new Pages.LoginPage())
@@ -93,6 +120,12 @@ namespace RoyalBakeryCashier
                             TerminalMode = val;
                         else if (key.Equals("Name", StringComparison.OrdinalIgnoreCase))
                             TerminalName = val;
+                        else if (key.Equals("Server", StringComparison.OrdinalIgnoreCase))
+                            DatabaseServer = val;
+                        else if (key.Equals("DbUser", StringComparison.OrdinalIgnoreCase))
+                            DbUser = val;
+                        else if (key.Equals("DbPassword", StringComparison.OrdinalIgnoreCase))
+                            DbPassword = val;
                     }
                 }
             }

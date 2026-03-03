@@ -27,12 +27,20 @@ namespace RoyalBakeryCashier.Data
         public DbSet<SalesOrderItem> SalesOrderItems { get; set; }
         public DbSet<User> Users { get; set; }
 
+        /// <summary>
+        /// Static connection string override. Set from App.xaml.cs based on terminal.config.
+        /// If null/empty, falls back to localhost with Windows Authentication.
+        /// </summary>
+        public static string ConnectionStringOverride { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlServer(
-                    "Server=localhost;Database=RoyalBakery;Trusted_Connection=True;TrustServerCertificate=True;Connect Timeout=120;");
+                string connStr = ConnectionStringOverride;
+                if (string.IsNullOrEmpty(connStr))
+                    connStr = "Server=localhost;Database=RoyalBakery;Trusted_Connection=True;TrustServerCertificate=True;Connect Timeout=120;";
+                optionsBuilder.UseSqlServer(connStr);
             }
         }
 

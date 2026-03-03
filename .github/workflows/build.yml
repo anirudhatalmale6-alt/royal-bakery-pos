@@ -1,4 +1,4 @@
-name: Build Windows EXE
+name: Build All
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-cashier:
+  build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,11 +19,20 @@ jobs:
       - name: Install MAUI workload
         run: dotnet workload install maui-windows
 
-      - name: Restore
+      - name: Restore Cashier
         run: dotnet restore RoyalBakeryCashier/RoyalBakeryCashierTerminal.csproj
+
+      - name: Restore Salesman
+        run: dotnet restore RoyalBakeryCashier/RoyalBakerySalesmanTerminal.csproj
+
+      - name: Restore API
+        run: dotnet restore RoyalBakeryAPI/RoyalBakeryAPI.csproj
 
       - name: Publish Cashier EXE
         run: dotnet publish RoyalBakeryCashier/RoyalBakeryCashierTerminal.csproj -c Release -f net9.0-windows10.0.19041.0 -o publish/cashier --self-contained -r win-x64
+
+      - name: Publish Salesman EXE
+        run: dotnet publish RoyalBakeryCashier/RoyalBakerySalesmanTerminal.csproj -c Release -f net9.0-windows10.0.19041.0 -o publish/salesman --self-contained -r win-x64
 
       - name: Publish API
         run: dotnet publish RoyalBakeryAPI/RoyalBakeryAPI.csproj -c Release -o publish/api --self-contained -r win-x64
@@ -33,6 +42,12 @@ jobs:
         with:
           name: RoyalBakeryCashier-Windows
           path: publish/cashier/
+
+      - name: Upload Salesman EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: RoyalBakerySalesman-Windows
+          path: publish/salesman/
 
       - name: Upload API
         uses: actions/upload-artifact@v4
