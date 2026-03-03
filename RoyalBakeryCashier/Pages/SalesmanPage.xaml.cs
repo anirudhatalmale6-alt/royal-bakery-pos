@@ -62,7 +62,8 @@ public partial class SalesmanPage : ContentPage
         Color.FromArgb("#F44336"),
     };
 
-    private const int QUICK_CATEGORY_ID = -1; // special ID for Quicks
+    private const int QUICK1_CATEGORY_ID = -1;
+    private const int QUICK2_CATEGORY_ID = -2;
 
     private void LoadCategories()
     {
@@ -72,7 +73,8 @@ public partial class SalesmanPage : ContentPage
 
         var allButtons = new List<(string Name, int? CatId)>
         {
-            ("Quicks", QUICK_CATEGORY_ID),
+            ("Quicks 1", QUICK1_CATEGORY_ID),
+            ("Quicks 2", QUICK2_CATEGORY_ID),
             ("All", null)
         };
         foreach (var cat in categories)
@@ -86,14 +88,20 @@ public partial class SalesmanPage : ContentPage
         for (int i = 0; i < allButtons.Count; i++)
         {
             var (name, catId) = allButtons[i];
+            Color bgColor;
+            if (catId == QUICK1_CATEGORY_ID) bgColor = Color.FromArgb("#E91E63");
+            else if (catId == QUICK2_CATEGORY_ID) bgColor = Color.FromArgb("#4CAF50");
+            else if (catId == null) bgColor = Color.FromArgb("#607D8B");
+            else bgColor = _categoryColors[i % _categoryColors.Length];
+
             var btn = new Button
             {
                 Text = name,
-                BackgroundColor = i == 0 ? Color.FromArgb("#E91E63") : _categoryColors[i % _categoryColors.Length],
+                BackgroundColor = bgColor,
                 TextColor = Colors.White,
                 CornerRadius = 8,
-                FontSize = 14,
-                HeightRequest = 50,
+                FontSize = 13,
+                HeightRequest = 44,
                 Margin = 0,
             };
             btn.Clicked += (s, e) => FilterItems(catId);
@@ -124,8 +132,10 @@ public partial class SalesmanPage : ContentPage
     private void FilterItems(int? categoryId)
     {
         var query = _dbContext.Stocks.Include(s => s.MenuItem).AsQueryable();
-        if (categoryId == QUICK_CATEGORY_ID)
-            query = query.Where(s => s.MenuItem.IsQuick);
+        if (categoryId == QUICK1_CATEGORY_ID)
+            query = query.Where(s => s.MenuItem.QuickCategory == 1 || s.MenuItem.IsQuick);
+        else if (categoryId == QUICK2_CATEGORY_ID)
+            query = query.Where(s => s.MenuItem.QuickCategory == 2);
         else if (categoryId != null)
             query = query.Where(s => s.MenuItem.MenuCategoryId == categoryId);
 
@@ -310,7 +320,7 @@ public partial class SalesmanPage : ContentPage
         await PrintOrderSlip(salesOrder);
 
         await DisplayAlert("Order Created",
-            $"{orderNumber} created — {_cartItems.Count} items, LKR {salesOrder.TotalAmount:N2}\n\nGive the printed slip to the customer for payment at the cashier.",
+            $"{orderNumber} created — {_cartItems.Count} items, Rs. {salesOrder.TotalAmount:N2}\n\nGive the printed slip to the customer for payment at the cashier.",
             "OK");
 
         // Clear cart for next order
@@ -334,7 +344,7 @@ public partial class SalesmanPage : ContentPage
             Directory.CreateDirectory(dir);
             await File.WriteAllTextAsync(
                 Path.Combine(dir, $"order_{DateTime.Now:yyyyMMdd_HHmmss}.txt"),
-                $"Order: {order.SalesOrderNumber} | Total: LKR {order.TotalAmount:N2}");
+                $"Order: {order.SalesOrderNumber} | Total: Rs. {order.TotalAmount:N2}");
         }
         catch { }
 
@@ -468,7 +478,7 @@ public partial class SalesmanPage : ContentPage
         });
     }
 
-    private void UpdateTotal() => TotalLabel.Text = $"Total: LKR{_cartItems.Sum(c => c.Total):F2}";
+    private void UpdateTotal() => TotalLabel.Text = $"Total: Rs. {_cartItems.Sum(c => c.Total):F2}";
 
     private void RefreshCart()
     {
@@ -546,7 +556,7 @@ public partial class SalesmanPage : ContentPage
                     customer.SetBinding(Label.TextProperty, new Binding("CustomerName", stringFormat: "Customer: {0}"));
 
                     var total = new Label { FontSize = 18, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#FFEB3B"), HorizontalTextAlignment = TextAlignment.End };
-                    total.SetBinding(Label.TextProperty, new Binding("TotalAmount", stringFormat: "LKR {0:N2}"));
+                    total.SetBinding(Label.TextProperty, new Binding("TotalAmount", stringFormat: "Rs. {0:N2}"));
 
                     var statusLabel = new Label { FontSize = 11, HorizontalTextAlignment = TextAlignment.End };
                     statusLabel.SetBinding(Label.TextProperty, new Binding("Status", converter: new StatusConverter()));

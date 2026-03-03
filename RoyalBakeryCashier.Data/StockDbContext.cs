@@ -3,7 +3,7 @@ using RoyalBakeryCashier.Data.Entities;
 
 namespace RoyalBakeryCashier.Data
 {
-    public class StockDbContext : DbContext
+    public partial class StockDbContext : DbContext
     {
         // Runtime DI constructor
         public StockDbContext(DbContextOptions<StockDbContext> options) : base(options) { }
@@ -266,6 +266,31 @@ namespace RoyalBakeryCashier.Data
                 @"IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MenuItems') AND name = 'IsQuick')
                   ALTER TABLE MenuItems ADD IsQuick BIT NOT NULL DEFAULT 0;",
 
+                @"IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MenuItems') AND name = 'QuickCategory')
+                  ALTER TABLE MenuItems ADD QuickCategory INT NOT NULL DEFAULT 0;",
+
+                // Sales table — add missing columns individually (handles partial schema)
+                @"IF OBJECT_ID('Sales', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'TotalAmount')
+                  ALTER TABLE Sales ADD TotalAmount DECIMAL(18,2) NOT NULL DEFAULT 0;",
+                @"IF OBJECT_ID('Sales', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'CashAmount')
+                  ALTER TABLE Sales ADD CashAmount DECIMAL(18,2) NOT NULL DEFAULT 0;",
+                @"IF OBJECT_ID('Sales', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'CardAmount')
+                  ALTER TABLE Sales ADD CardAmount DECIMAL(18,2) NOT NULL DEFAULT 0;",
+                @"IF OBJECT_ID('Sales', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'ChangeGiven')
+                  ALTER TABLE Sales ADD ChangeGiven DECIMAL(18,2) NOT NULL DEFAULT 0;",
+                @"IF OBJECT_ID('Sales', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'CashierName')
+                  ALTER TABLE Sales ADD CashierName NVARCHAR(MAX) NULL;",
+                @"IF OBJECT_ID('Sales', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'InvoiceNumber')
+                  ALTER TABLE Sales ADD InvoiceNumber NVARCHAR(MAX) NOT NULL DEFAULT '';",
+
+                // SaleItems — add missing columns
+                @"IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'ItemName')
+                  ALTER TABLE SaleItems ADD ItemName NVARCHAR(MAX) NOT NULL DEFAULT '';",
+                @"IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'PricePerItem')
+                  ALTER TABLE SaleItems ADD PricePerItem DECIMAL(18,2) NOT NULL DEFAULT 0;",
+                @"IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'TotalPrice')
+                  ALTER TABLE SaleItems ADD TotalPrice DECIMAL(18,2) NOT NULL DEFAULT 0;",
+
                 // Users table for login
                 @"IF OBJECT_ID('Users', 'U') IS NULL
                   CREATE TABLE Users (
@@ -294,6 +319,9 @@ namespace RoyalBakeryCashier.Data
                 ");
             }
             catch { }
+
+            // Seed menu categories and items from Royal Bakery price list
+            SeedMenuData();
         }
     }
 }
