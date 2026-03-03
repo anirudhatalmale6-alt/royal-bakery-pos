@@ -41,7 +41,7 @@ public partial class PaymentPage : ContentPage
                 .First(o => o.Id == _orderId));
 
             _total = _order.TotalAmount;
-            TotalLabel.Text = $"LKR {_total:N2}";
+            TotalLabel.Text = $"Rs. {_total:N2}";
             CashEntry.Text = ((int)_total).ToString();
             CardEntry.Text = "0";
             UpdateBalance();
@@ -94,7 +94,7 @@ public partial class PaymentPage : ContentPage
             // Still owes money
             BalanceFrame.IsVisible = true;
             ChangeFrame.IsVisible = false;
-            BalanceLabel.Text = $"LKR {remaining:N2}";
+            BalanceLabel.Text = $"Rs. {remaining:N2}";
             BalanceLabel.TextColor = Colors.OrangeRed;
             BalanceTitle.Text = "Remaining";
             ConfirmBtn.IsEnabled = false;
@@ -105,7 +105,7 @@ public partial class PaymentPage : ContentPage
             // Exact payment
             BalanceFrame.IsVisible = true;
             ChangeFrame.IsVisible = false;
-            BalanceLabel.Text = "LKR 0.00";
+            BalanceLabel.Text = "Rs. 0.00";
             BalanceLabel.TextColor = Color.FromArgb("#4CAF50");
             BalanceTitle.Text = "Balance";
             ConfirmBtn.IsEnabled = true;
@@ -116,7 +116,7 @@ public partial class PaymentPage : ContentPage
             // Overpaid — show change
             BalanceFrame.IsVisible = false;
             ChangeFrame.IsVisible = true;
-            ChangeLabel.Text = $"LKR {Math.Abs(remaining):N2}";
+            ChangeLabel.Text = $"Rs. {Math.Abs(remaining):N2}";
             ConfirmBtn.IsEnabled = true;
             ConfirmBtn.BackgroundColor = Color.FromArgb("#4CAF50");
         }
@@ -275,7 +275,7 @@ public partial class PaymentPage : ContentPage
             Directory.CreateDirectory(receiptDir);
             await File.WriteAllTextAsync(
                 Path.Combine(receiptDir, $"receipt_{DateTime.Now:yyyyMMdd_HHmmss}.txt"),
-                $"Invoice: {sale.InvoiceNumber} | Total: LKR {sale.TotalAmount:N2}");
+                $"Invoice: {sale.InvoiceNumber} | Total: Rs.{sale.TotalAmount:N2}");
         }
         catch { }
 

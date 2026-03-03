@@ -59,7 +59,7 @@ namespace RoyalBakeryCashier.Pages
 
             foreach (var s in shortages)
             {
-                var txt = $"{s.Item.Name} — requested: {s.Item.Quantity}, available: {s.Available}";
+                var txt = $"{s.Item.Name} ï¿½ requested: {s.Item.Quantity}, available: {s.Available}";
                 StockProblemsList.Children.Add(new Label { Text = txt, TextColor = Colors.DarkRed, FontSize = 14 });
             }
         }
@@ -71,12 +71,12 @@ namespace RoyalBakeryCashier.Pages
                 var change = tender - _total;
                 if (change >= 0)
                 {
-                    BalanceLabel.Text = $"Change: LKR {change:N2}";
+                    BalanceLabel.Text = $"Change: Rs. {change:N2}";
                     BalanceLabel.TextColor = Colors.Green;
                 }
                 else
                 {
-                    BalanceLabel.Text = $"Outstanding: LKR {Math.Abs(change):N2}";
+                    BalanceLabel.Text = $"Outstanding: Rs. {Math.Abs(change):N2}";
                     BalanceLabel.TextColor = Colors.OrangeRed;
                 }
             }

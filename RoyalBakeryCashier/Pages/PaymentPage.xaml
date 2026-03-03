@@ -75,7 +75,7 @@
                     <Frame x:Name="BalanceFrame" BackgroundColor="{StaticResource ItemRowBg}" CornerRadius="10" Padding="12" BorderColor="{StaticResource Gray600}">
                         <Grid ColumnDefinitions="*,Auto">
                             <Label x:Name="BalanceTitle" Text="Balance" TextColor="{StaticResource Gray300}" FontSize="15" VerticalOptions="Center"/>
-                            <Label x:Name="BalanceLabel" Grid.Column="1" Text="LKR 0.00" FontSize="20" FontAttributes="Bold"
+                            <Label x:Name="BalanceLabel" Grid.Column="1" Text="Rs. 0.00" FontSize="20" FontAttributes="Bold"
                                    TextColor="OrangeRed" HorizontalOptions="End"/>
                         </Grid>
                     </Frame>
@@ -84,7 +84,7 @@
                     <Frame x:Name="ChangeFrame" BackgroundColor="#1B3A1B" CornerRadius="10" Padding="12" BorderColor="#4CAF50" IsVisible="False">
                         <Grid ColumnDefinitions="*,Auto">
                             <Label Text="Change" TextColor="#81C784" FontSize="15" VerticalOptions="Center"/>
-                            <Label x:Name="ChangeLabel" Grid.Column="1" Text="LKR 0.00" FontSize="20" FontAttributes="Bold"
+                            <Label x:Name="ChangeLabel" Grid.Column="1" Text="Rs. 0.00" FontSize="20" FontAttributes="Bold"
                                    TextColor="#4CAF50" HorizontalOptions="End"/>
                         </Grid>
                     </Frame>

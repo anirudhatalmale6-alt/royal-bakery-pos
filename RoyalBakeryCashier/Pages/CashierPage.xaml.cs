@@ -474,7 +474,7 @@ namespace RoyalBakeryCashier.Pages
             }
         }
 
-        private void UpdateTotal() => TotalLabel.Text = $"Total: LKR{_cartItems.Sum(c => c.Total):F2}";
+        private void UpdateTotal() => TotalLabel.Text = $"Total: Rs. {_cartItems.Sum(c => c.Total):F2}";
 
         private void RefreshCart()
         {

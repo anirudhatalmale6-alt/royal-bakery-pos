@@ -123,26 +123,26 @@ public partial class SalesHistoryPage : ContentPage
                     TextColor = Black,
                     Padding = new Thickness(0, 4, 0, 0)
                 });
-                AddRow(receiptStack, $"  {item.Quantity} x LKR {item.PricePerItem:N2}",
-                    $"LKR {item.TotalPrice:N2}", 11, Grey);
+                AddRow(receiptStack, $"  {item.Quantity} x Rs. {item.PricePerItem:N2}",
+                    $"Rs. {item.TotalPrice:N2}", 11, Grey);
             }
 
             AddLine(receiptStack, 1);
 
             // Subtotal
-            AddRow(receiptStack, "Subtotal", $"LKR {total:N2}", 12, Black);
+            AddRow(receiptStack, "Subtotal", $"Rs. {total:N2}", 12, Black);
             AddLine(receiptStack, 2);
 
             // TOTAL
-            AddRow(receiptStack, "TOTAL", $"LKR {total:N2}", 14, Black, true);
+            AddRow(receiptStack, "TOTAL", $"Rs. {total:N2}", 14, Black, true);
             AddLine(receiptStack, 1);
 
             // Payment breakdown
             if (sale.CashAmount > 0)
-                AddRow(receiptStack, "Cash", $"LKR {sale.CashAmount:N2}", 12, Black);
+                AddRow(receiptStack, "Cash", $"Rs. {sale.CashAmount:N2}", 12, Black);
             if (sale.CardAmount > 0)
-                AddRow(receiptStack, "Card", $"LKR {sale.CardAmount:N2}", 12, Black);
-            AddRow(receiptStack, "Change", $"LKR {change:N2}", 12, Black, true);
+                AddRow(receiptStack, "Card", $"Rs. {sale.CardAmount:N2}", 12, Black);
+            AddRow(receiptStack, "Change", $"Rs. {change:N2}", 12, Black, true);
             AddLine(receiptStack, 1);
 
             // Footer
@@ -387,7 +387,7 @@ public partial class SalesHistoryPage : ContentPage
         public string ItemNames { get; set; } = string.Empty;
 
         public string DateTimeFormatted => DateTime.ToString("dd MMM yyyy, hh:mm tt");
-        public string TotalFormatted => $"LKR {TotalAmount:N2}";
+        public string TotalFormatted => $"Rs. {TotalAmount:N2}";
         public string ItemsSummary => $"{ItemCount} item(s): {ItemNames}";
         public string PaymentMethod
         {
