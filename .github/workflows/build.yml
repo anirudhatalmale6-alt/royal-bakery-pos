@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -36,6 +38,38 @@ jobs:
 
       - name: Publish API
         run: dotnet publish RoyalBakeryAPI/RoyalBakeryAPI.csproj -c Release -o publish/api --self-contained -r win-x64
+
+      - name: Zip artifacts
+        run: |
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.2.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.2.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.2.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.2
+          name: v1.2 - Compact Layout + Quicks + Menu Data
+          body: |
+            ## Changes in v1.2
+            - Compact POS layout (smaller numpad, more cart space, tighter spacing)
+            - Title: "The Royal Bakery" with Cashier/Salesman subtitle
+            - Fixed payment error (missing Sales table columns)
+            - Added Quicks 1 and Quicks 2 quick-access categories
+            - Imported 195 menu items across 20 categories from price list
+            - Currency changed from LKR to Rs. throughout
+            - Auto-seeds menu data on first startup
+
+            ## Downloads
+            - **RoyalBakeryCashier-v1.2.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.2.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.2.zip** — API server
+          files: |
+            RoyalBakeryCashier-v1.2.zip
+            RoyalBakerySalesman-v1.2.zip
+            RoyalBakeryAPI-v1.2.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Cashier EXE
         uses: actions/upload-artifact@v4
