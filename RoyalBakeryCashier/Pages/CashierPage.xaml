@@ -48,6 +48,14 @@
                                 Clicked="LoadSalesOrder_Clicked"/>
                     </HorizontalStackLayout>
                 </Frame>
+                <Button Text="Report"
+                        FontSize="12"
+                        HeightRequest="32"
+                        Padding="10,0"
+                        CornerRadius="8"
+                        BackgroundColor="#FF9800"
+                        TextColor="White"
+                        Clicked="DailyReport_Clicked"/>
                 <Button Text="Sales History"
                         FontSize="12"
                         HeightRequest="32"
@@ -111,20 +119,20 @@
                                            BorderColor="{StaticResource Gray600}"
                                            HorizontalOptions="FillAndExpand">
 
-                                        <VerticalStackLayout Spacing="2"
+                                        <VerticalStackLayout Spacing="1"
                                                              HorizontalOptions="Center"
                                                              VerticalOptions="Center">
 
                                             <Label Text="{Binding Name}"
-                                                   FontSize="12"
+                                                   FontSize="11"
                                                    FontAttributes="Bold"
                                                    TextColor="White"
                                                    HorizontalTextAlignment="Center"
                                                    LineBreakMode="TailTruncation"
-                                                   MaxLines="2"/>
+                                                   MaxLines="1"/>
 
                                             <Label Text="{Binding Price, StringFormat='{0:F2}'}"
-                                                   FontSize="11"
+                                                   FontSize="12"
                                                    FontAttributes="Bold"
                                                    TextColor="{StaticResource TotalHighlight}"
                                                    HorizontalTextAlignment="Center"/>

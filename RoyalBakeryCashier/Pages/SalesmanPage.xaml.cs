@@ -38,7 +38,16 @@ public partial class SalesmanPage : ContentPage
             await Task.Run(() =>
             {
                 _dbContext.Database.EnsureCreated();
-                _dbContext.ApplyMigrations();
+                bool alreadySeeded = false;
+                try { alreadySeeded = _dbContext.MenuCategories.Any(); } catch { }
+                if (!alreadySeeded)
+                    _dbContext.ApplyMigrations();
+                else
+                {
+                    try { _dbContext.Database.ExecuteSqlRaw(
+                        @"IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MenuItems') AND name = 'QuickCategory')
+                          ALTER TABLE MenuItems ADD QuickCategory INT NOT NULL DEFAULT 0;"); } catch { }
+                }
             });
             LoadCategories();
             LoadItems();
@@ -174,18 +183,30 @@ public partial class SalesmanPage : ContentPage
     {
         if (qty <= 0) return;
 
-        if (qty > menuItem.AvailableStock)
+        var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);
+        int inCart = existing?.Quantity ?? 0;
+        int available = menuItem.AvailableStock;
+
+        if (available <= 0)
         {
-            DisplayAlert("Stock", $"Only {menuItem.AvailableStock} items left for {menuItem.Name}", "OK");
+            DisplayAlert("Insufficient Stock",
+                $"\"{menuItem.Name}\"\n\nNo stock available.\nAvailable: 0\nIn cart: {inCart}", "OK");
             return;
         }
 
-        var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);
+        if (qty > available)
+        {
+            DisplayAlert("Insufficient Stock",
+                $"\"{menuItem.Name}\"\n\nRequested: {qty}\nAvailable: {available}\nIn cart: {inCart}\n\nItem not added.", "OK");
+            return;
+        }
+
         if (existing != null)
         {
-            if (existing.Quantity + qty > menuItem.AvailableStock)
+            if (inCart + qty > available)
             {
-                DisplayAlert("Stock", $"Cannot exceed available stock ({menuItem.AvailableStock})", "OK");
+                DisplayAlert("Insufficient Stock",
+                    $"\"{menuItem.Name}\"\n\nRequested: {qty} more\nAvailable: {available}\nAlready in cart: {inCart}\n\nCannot add more.", "OK");
                 return;
             }
             existing.Quantity += qty;
@@ -251,14 +272,16 @@ public partial class SalesmanPage : ContentPage
         if (sender is Button btn && btn.CommandParameter is CartItem item)
         {
             var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
-            if (menuItem != null && item.Quantity < menuItem.AvailableStock)
+            if (menuItem != null && menuItem.AvailableStock > 0)
             {
                 item.Quantity++;
                 item.Total = item.Quantity * item.Price;
+                menuItem.AvailableStock--;
             }
             else
             {
-                DisplayAlert("Stock", $"Cannot exceed available stock ({menuItem?.AvailableStock})", "OK");
+                DisplayAlert("Insufficient Stock",
+                    $"\"{item.Name}\"\n\nNo more stock available.\nIn cart: {item.Quantity}", "OK");
             }
             UpdateTotal();
             RefreshCart();

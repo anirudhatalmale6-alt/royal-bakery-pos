@@ -122,6 +122,88 @@ using (var scope = app.Services.CreateScope())
                 IsActive BIT NOT NULL DEFAULT 1,
                 CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE()
             );
+
+            -- Cashier/Salesman tables (needed so DB is complete)
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Orders' AND xtype='U')
+            CREATE TABLE Orders (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                DateTime DATETIME2 NOT NULL,
+                Status INT NOT NULL DEFAULT 1,
+                TotalAmount DECIMAL(18,2) NOT NULL DEFAULT 0
+            );
+
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='OrderItems' AND xtype='U')
+            CREATE TABLE OrderItems (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                OrderId INT NOT NULL,
+                MenuItemId INT NOT NULL,
+                Quantity INT NOT NULL,
+                PricePerItem DECIMAL(18,2) NOT NULL DEFAULT 0,
+                TotalPrice DECIMAL(18,2) NOT NULL DEFAULT 0,
+                FOREIGN KEY (OrderId) REFERENCES Orders(Id) ON DELETE CASCADE,
+                FOREIGN KEY (MenuItemId) REFERENCES MenuItems(Id)
+            );
+
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='OrderPayments' AND xtype='U')
+            CREATE TABLE OrderPayments (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                OrderId INT NOT NULL,
+                PaymentType INT NOT NULL DEFAULT 0,
+                TenderAmount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                DateTime DATETIME2 NOT NULL
+            );
+
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Sales' AND xtype='U')
+            CREATE TABLE Sales (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                DateTime DATETIME2 NOT NULL,
+                TotalAmount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                CashAmount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                CardAmount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                ChangeGiven DECIMAL(18,2) NOT NULL DEFAULT 0,
+                CashierName NVARCHAR(MAX) NULL,
+                InvoiceNumber NVARCHAR(MAX) NOT NULL DEFAULT ''
+            );
+
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SaleItems' AND xtype='U')
+            CREATE TABLE SaleItems (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                SaleId INT NOT NULL,
+                MenuItemId INT NOT NULL,
+                ItemName NVARCHAR(MAX) NOT NULL DEFAULT '',
+                Quantity INT NOT NULL,
+                PricePerItem DECIMAL(18,2) NOT NULL DEFAULT 0,
+                TotalPrice DECIMAL(18,2) NOT NULL DEFAULT 0,
+                FOREIGN KEY (SaleId) REFERENCES Sales(Id) ON DELETE CASCADE,
+                FOREIGN KEY (MenuItemId) REFERENCES MenuItems(Id)
+            );
+
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SalesOrders' AND xtype='U')
+            CREATE TABLE SalesOrders (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                SalesOrderNumber NVARCHAR(20) NOT NULL,
+                CreatedAt DATETIME2 NOT NULL,
+                TotalAmount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                Status INT NOT NULL DEFAULT 0,
+                TerminalName NVARCHAR(MAX) NULL,
+                CustomerName NVARCHAR(MAX) NULL
+            );
+
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SalesOrderItems' AND xtype='U')
+            CREATE TABLE SalesOrderItems (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                SalesOrderId INT NOT NULL,
+                MenuItemId INT NOT NULL,
+                Quantity INT NOT NULL,
+                PricePerItem DECIMAL(18,2) NOT NULL DEFAULT 0,
+                TotalPrice DECIMAL(18,2) NOT NULL DEFAULT 0,
+                FOREIGN KEY (SalesOrderId) REFERENCES SalesOrders(Id) ON DELETE CASCADE,
+                FOREIGN KEY (MenuItemId) REFERENCES MenuItems(Id)
+            );
+
+            -- Add QuickCategory column if missing
+            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MenuItems') AND name = 'QuickCategory')
+              ALTER TABLE MenuItems ADD QuickCategory INT NOT NULL DEFAULT 0;
         ");
         Console.WriteLine("Database tables verified/created.");
 

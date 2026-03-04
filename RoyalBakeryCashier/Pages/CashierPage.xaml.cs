@@ -38,7 +38,24 @@ namespace RoyalBakeryCashier.Pages
                     await Task.Run(() =>
                     {
                         _dbContext.Database.EnsureCreated();
-                        _dbContext.ApplyMigrations();
+
+                        // Only run full migrations + seed on first-ever startup
+                        bool alreadySeeded = false;
+                        try { alreadySeeded = _dbContext.MenuCategories.Any(); } catch { }
+
+                        if (!alreadySeeded)
+                            _dbContext.ApplyMigrations(); // creates tables + seeds 195 items
+                        else
+                        {
+                            // Quick schema patch only (no seed)
+                            try
+                            {
+                                _dbContext.Database.ExecuteSqlRaw(
+                                    @"IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MenuItems') AND name = 'QuickCategory')
+                                      ALTER TABLE MenuItems ADD QuickCategory INT NOT NULL DEFAULT 0;");
+                            }
+                            catch { }
+                        }
                     });
                     LoadCategories();
                 }
@@ -131,6 +148,62 @@ namespace RoyalBakeryCashier.Pages
         private async void GoToClearance_Clicked(object sender, EventArgs e)
         {
             await Shell.Current.GoToAsync("ClearStock");
+        }
+
+        // ===== DAILY SALES REPORT =====
+        private async void DailyReport_Clicked(object sender, EventArgs e)
+        {
+            try
+            {
+                var today = DateTime.Today;
+                var tomorrow = today.AddDays(1);
+
+                var todaySales = _dbContext.Sales
+                    .Include(s => s.Items)
+                    .Where(s => s.DateTime >= today && s.DateTime < tomorrow)
+                    .ToList();
+
+                int invoiceCount = todaySales.Count;
+                decimal totalRevenue = todaySales.Sum(s => s.TotalAmount);
+                decimal totalCash = todaySales.Sum(s => s.CashAmount);
+                decimal totalCard = todaySales.Sum(s => s.CardAmount);
+                decimal totalChange = todaySales.Sum(s => s.ChangeGiven);
+
+                // Items sold breakdown
+                var itemsSold = todaySales
+                    .SelectMany(s => s.Items)
+                    .GroupBy(si => si.ItemName)
+                    .Select(g => new { Name = g.Key, Qty = g.Sum(x => x.Quantity), Total = g.Sum(x => x.TotalPrice) })
+                    .OrderByDescending(x => x.Total)
+                    .ToList();
+
+                var sb = new StringBuilder();
+                sb.AppendLine($"Date: {today:dd MMM yyyy}");
+                sb.AppendLine($"Invoices: {invoiceCount}");
+                sb.AppendLine($"Total Revenue: Rs. {totalRevenue:N2}");
+                sb.AppendLine();
+                sb.AppendLine("--- Payment Summary ---");
+                sb.AppendLine($"Cash Received: Rs. {totalCash:N2}");
+                sb.AppendLine($"Card Payments: Rs. {totalCard:N2}");
+                sb.AppendLine($"Change Given: Rs. {totalChange:N2}");
+                sb.AppendLine($"Net Collected: Rs. {(totalCash + totalCard - totalChange):N2}");
+                sb.AppendLine();
+                sb.AppendLine("--- Items Sold ---");
+                foreach (var item in itemsSold.Take(30))
+                {
+                    sb.AppendLine($"{item.Qty}x {item.Name} = Rs. {item.Total:N2}");
+                }
+                if (itemsSold.Count > 30)
+                    sb.AppendLine($"... and {itemsSold.Count - 30} more items");
+                sb.AppendLine();
+                sb.AppendLine($"Total Items: {itemsSold.Sum(x => x.Qty)}");
+
+                await DisplayAlert("Daily Sales Report", sb.ToString(), "Close");
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Error", $"Could not generate report: {ex.Message}", "OK");
+            }
         }
 
         private async void SalesHistory_Clicked(object sender, EventArgs e)
@@ -313,18 +386,30 @@ namespace RoyalBakeryCashier.Pages
         {
             if (qty <= 0) return;
 
-            if (qty > menuItem.AvailableStock)
+            var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);
+            int inCart = existing?.Quantity ?? 0;
+            int available = menuItem.AvailableStock;
+
+            if (available <= 0)
             {
-                DisplayAlert("Stock", $"Only {menuItem.AvailableStock} items left for {menuItem.Name}", "OK");
+                DisplayAlert("Insufficient Stock",
+                    $"\"{menuItem.Name}\"\n\nNo stock available.\nAvailable: 0\nIn cart: {inCart}", "OK");
                 return;
             }
 
-            var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);
+            if (qty > available)
+            {
+                DisplayAlert("Insufficient Stock",
+                    $"\"{menuItem.Name}\"\n\nRequested: {qty}\nAvailable: {available}\nIn cart: {inCart}\n\nItem not added.", "OK");
+                return;
+            }
+
             if (existing != null)
             {
-                if (existing.Quantity + qty > menuItem.AvailableStock)
+                if (inCart + qty > available)
                 {
-                    DisplayAlert("Stock", $"Cannot exceed available stock ({menuItem.AvailableStock})", "OK");
+                    DisplayAlert("Insufficient Stock",
+                        $"\"{menuItem.Name}\"\n\nRequested: {qty} more\nAvailable: {available}\nAlready in cart: {inCart}\n\nCannot add more.", "OK");
                     return;
                 }
                 existing.Quantity += qty;
@@ -459,14 +544,16 @@ namespace RoyalBakeryCashier.Pages
             if (sender is Button btn && btn.CommandParameter is CartItem item)
             {
                 var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
-                if (menuItem != null && item.Quantity < menuItem.AvailableStock)
+                if (menuItem != null && menuItem.AvailableStock > 0)
                 {
                     item.Quantity++;
                     item.Total = item.Quantity * item.Price;
+                    menuItem.AvailableStock--;
                 }
                 else
                 {
-                    DisplayAlert("Stock", $"Cannot exceed available stock ({menuItem?.AvailableStock})", "OK");
+                    DisplayAlert("Insufficient Stock",
+                        $"\"{item.Name}\"\n\nNo more stock available.\nIn cart: {item.Quantity}", "OK");
                 }
 
                 UpdateTotal();

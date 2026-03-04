@@ -41,33 +41,33 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.2.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.2.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.2.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.3.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.3.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.3.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.2
-          name: v1.2 - Compact Layout + Quicks + Menu Data
+          tag_name: v1.3
+          name: v1.3 - Bug Fixes + Daily Report + Stock Validation
           body: |
-            ## Changes in v1.2
-            - Compact POS layout (smaller numpad, more cart space, tighter spacing)
-            - Title: "The Royal Bakery" with Cashier/Salesman subtitle
-            - Fixed payment error (missing Sales table columns)
-            - Added Quicks 1 and Quicks 2 quick-access categories
-            - Imported 195 menu items across 20 categories from price list
-            - Currency changed from LKR to Rs. throughout
-            - Auto-seeds menu data on first startup
+            ## Changes in v1.3
+            - API: Added missing database tables (Orders, OrderItems, OrderPayments, Sales, SaleItems, SalesOrders, SalesOrderItems)
+            - API: Fixed Windows Service startup
+            - Cashier: Added daily sales report (total revenue, cash/card breakdown, items sold)
+            - Cashier: Long item names no longer hide the price
+            - Cashier/Salesman: Improved stock validation with detailed popup (shows available qty, in-cart qty)
+            - Cashier/Salesman: Fast startup — skips full migration if data already exists
+            - Currency: All displays use Rs. format
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.2.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.2.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.2.zip** — API server
+            - **RoyalBakeryCashier-v1.3.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.3.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.3.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.2.zip
-            RoyalBakerySalesman-v1.2.zip
-            RoyalBakeryAPI-v1.2.zip
+            RoyalBakeryCashier-v1.3.zip
+            RoyalBakerySalesman-v1.3.zip
+            RoyalBakeryAPI-v1.3.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
