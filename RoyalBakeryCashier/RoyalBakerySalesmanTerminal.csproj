@@ -52,13 +52,25 @@
 	  <Compile Update="Pages\CashierPage.xaml.cs">
 	    <DependentUpon>CashierPage.xaml</DependentUpon>
 	  </Compile>
+	  <Compile Update="Pages\SalesmanPage.xaml.cs">
+	    <DependentUpon>SalesmanPage.xaml</DependentUpon>
+	  </Compile>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiXaml Update="Pages\EnterOrderPage.xaml">
+	  <MauiXaml Update="Pages\CashierPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Pages\OrderDetailsPage.xaml">
+	  <MauiXaml Update="Pages\SalesmanPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\SalesHistoryPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\LoginPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\LauncherPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Pages\PaymentPage.xaml">
@@ -67,10 +79,10 @@
 	  <MauiXaml Update="Pages\PaymentPopupPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Pages\CashierPage.xaml">
+	  <MauiXaml Update="Pages\EnterOrderPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Pages\LoginPage.xaml">
+	  <MauiXaml Update="Pages\OrderDetailsPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	</ItemGroup>

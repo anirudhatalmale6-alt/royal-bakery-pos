@@ -44,31 +44,30 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.5.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.5.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.5.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.6.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.6.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.6.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.5
-          name: v1.5 - Salesman Network DB + GRN UI Fix
+          tag_name: v1.6
+          name: v1.6 - Fixed .csproj Page References
           body: |
-            ## Changes in v1.5
-            - Salesman: Fixed network DB connection (uses SQL Server auth via terminal.config)
-            - Salesman: Includes sample terminal.config for network setup
-            - Cashier/Salesman: Default connection now uses .\SQLEXPRESS instance
-            - GRN APK: Login page redesigned for Lenovo Tab 7 (centered card layout)
+            ## Changes in v1.6
+            - Fixed .csproj files: added missing MauiXaml entries for SalesmanPage, SalesHistoryPage, LauncherPage
+            - Fixed DependentUpon for SalesmanPage.xaml.cs in both project files
+            - Resolves Visual Studio build errors
             - All previous fixes included
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.5.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.5.zip** — Salesman terminal EXE (includes terminal.config.sample)
-            - **RoyalBakeryAPI-v1.5.zip** — API server
+            - **RoyalBakeryCashier-v1.6.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.6.zip** — Salesman terminal EXE (includes terminal.config.sample)
+            - **RoyalBakeryAPI-v1.6.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.5.zip
-            RoyalBakerySalesman-v1.5.zip
-            RoyalBakeryAPI-v1.5.zip
+            RoyalBakeryCashier-v1.6.zip
+            RoyalBakerySalesman-v1.6.zip
+            RoyalBakeryAPI-v1.6.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
