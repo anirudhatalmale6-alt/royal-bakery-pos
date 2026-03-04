@@ -222,6 +222,37 @@ using (var scope = app.Services.CreateScope())
             db.SaveChanges();
             Console.WriteLine("Default admin user created (admin/admin123)");
         }
+
+        // Seed menu data + initial GRN (qty 10) if no categories exist yet
+        bool hasMenuData = false;
+        try { hasMenuData = db.MenuCategories.Any(); } catch { }
+        if (!hasMenuData)
+        {
+            try
+            {
+                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                using var stream = assembly.GetManifestResourceStream("RoyalBakeryAPI.SeedData.sql");
+                if (stream != null)
+                {
+                    using var reader = new StreamReader(stream);
+                    string seedSql = reader.ReadToEnd();
+                    db.Database.ExecuteSqlRaw(seedSql);
+                    Console.WriteLine("Menu data seeded: 20 categories, 195 items, stocks (qty 10), initial GRN created.");
+                }
+                else
+                {
+                    Console.WriteLine("WARNING: SeedData.sql embedded resource not found!");
+                }
+            }
+            catch (Exception seedEx)
+            {
+                Console.WriteLine($"Seed data error: {seedEx.Message}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Menu data already exists, skipping seed.");
+        }
     }
     catch (Exception ex)
     {

@@ -1,18 +1,4 @@
-using Microsoft.EntityFrameworkCore;
-
-namespace RoyalBakeryCashier.Data
-{
-    public partial class StockDbContext
-    {
-        /// <summary>
-        /// Seeds menu categories and items from the Royal Bakery price list.
-        /// Only runs if MenuCategories table is empty (first-time setup).
-        /// </summary>
-        public void SeedMenuData()
-        {
-            try
-            {
-                Database.ExecuteSqlRaw(@"IF NOT EXISTS (SELECT 1 FROM MenuCategories)
+IF NOT EXISTS (SELECT 1 FROM MenuCategories)
 BEGIN
   INSERT INTO MenuCategories (Name) VALUES (N'TYPICAL SRI LANKAN BREAD');
   INSERT INTO MenuCategories (Name) VALUES (N'HEALTH BREAD');
@@ -233,9 +219,13 @@ BEGIN
 
   INSERT INTO Stocks (MenuItemId, Quantity)
   SELECT Id, 10 FROM MenuItems WHERE Id NOT IN (SELECT MenuItemId FROM Stocks);
-END");
-            }
-            catch { }
-        }
-    }
-}
+
+  -- Create initial GRN for all items with qty 10
+  IF NOT EXISTS (SELECT 1 FROM GRNs)
+  BEGIN
+    INSERT INTO GRNs (GRNNumber, CreatedAt) VALUES (N'GRN-INITIAL', GETDATE());
+    INSERT INTO GRNItems (GRNId, MenuItemId, Quantity, Price, CurrentQuantity)
+    SELECT (SELECT TOP 1 Id FROM GRNs WHERE GRNNumber = N'GRN-INITIAL'), Id, 10, Price, 10 FROM MenuItems;
+  END
+
+END
