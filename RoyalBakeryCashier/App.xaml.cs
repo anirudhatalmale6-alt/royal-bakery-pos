@@ -21,7 +21,7 @@ namespace RoyalBakeryCashier
         /// Database server address. Defaults to localhost.
         /// Set via terminal.config: Server=192.168.x.x
         /// </summary>
-        public static string DatabaseServer { get; set; } = "localhost";
+        public static string DatabaseServer { get; set; } = ".\\SQLEXPRESS";
 
         /// <summary>
         /// Database credentials (optional). If empty, uses Windows Authentication.
@@ -73,9 +73,9 @@ namespace RoyalBakeryCashier
                 Data.StockDbContext.ConnectionStringOverride =
                     $"Server={DatabaseServer};Database=RoyalBakery;User Id={DbUser};Password={DbPassword};TrustServerCertificate=True;Connect Timeout=120;";
             }
-            else if (DatabaseServer != "localhost")
+            else
             {
-                // Windows Auth to a remote server
+                // Windows Auth (local or remote)
                 Data.StockDbContext.ConnectionStringOverride =
                     $"Server={DatabaseServer};Database=RoyalBakery;Trusted_Connection=True;TrustServerCertificate=True;Connect Timeout=120;";
             }

@@ -39,33 +39,36 @@ jobs:
       - name: Publish API
         run: dotnet publish RoyalBakeryAPI/RoyalBakeryAPI.csproj -c Release -o publish/api --self-contained -r win-x64
 
+      - name: Copy sample config to Salesman
+        run: Copy-Item RoyalBakeryCashier/terminal.config.salesman.sample publish/salesman/terminal.config.sample
+
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.4.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.4.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.4.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.5.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.5.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.5.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4
-          name: v1.4 - API Seeds Menu Data + GRN
+          tag_name: v1.5
+          name: v1.5 - Salesman Network DB + GRN UI Fix
           body: |
-            ## Changes in v1.4
-            - API: Now seeds 20 categories + 195 menu items from Excel price lists on first startup
-            - API: Creates initial GRN for all items with quantity 10
-            - API: Stocks initialized with qty 10 for all items
-            - Cashier/Salesman: Stock qty updated to 10 (matching API)
-            - All v1.3 fixes included (missing tables, daily report, stock validation, fast startup)
+            ## Changes in v1.5
+            - Salesman: Fixed network DB connection (uses SQL Server auth via terminal.config)
+            - Salesman: Includes sample terminal.config for network setup
+            - Cashier/Salesman: Default connection now uses .\SQLEXPRESS instance
+            - GRN APK: Login page redesigned for Lenovo Tab 7 (centered card layout)
+            - All previous fixes included
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.4.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.4.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.4.zip** — API server
+            - **RoyalBakeryCashier-v1.5.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.5.zip** — Salesman terminal EXE (includes terminal.config.sample)
+            - **RoyalBakeryAPI-v1.5.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.4.zip
-            RoyalBakerySalesman-v1.4.zip
-            RoyalBakeryAPI-v1.4.zip
+            RoyalBakeryCashier-v1.5.zip
+            RoyalBakerySalesman-v1.5.zip
+            RoyalBakeryAPI-v1.5.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

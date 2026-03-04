@@ -39,7 +39,7 @@ namespace RoyalBakeryCashier.Data
             {
                 string connStr = ConnectionStringOverride;
                 if (string.IsNullOrEmpty(connStr))
-                    connStr = "Server=localhost;Database=RoyalBakery;Trusted_Connection=True;TrustServerCertificate=True;Connect Timeout=120;";
+                    connStr = "Server=.\\SQLEXPRESS;Database=RoyalBakery;Trusted_Connection=True;TrustServerCertificate=True;Connect Timeout=120;";
                 optionsBuilder.UseSqlServer(connStr);
             }
         }
