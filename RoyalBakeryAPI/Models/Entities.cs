@@ -106,6 +106,19 @@ public class Clearance
     public string? Note { get; set; }
 }
 
+[Table("GRNEditLogs")]
+public class GRNEditLog
+{
+    [Key]
+    public int Id { get; set; }
+    public int GRNId { get; set; }
+    public GRN? GRN { get; set; }
+    [Required]
+    public string Reason { get; set; } = string.Empty;
+    public string ChangeSummary { get; set; } = string.Empty;
+    public DateTime EditedAt { get; set; } = DateTime.Now;
+}
+
 [Table("Users")]
 public class User
 {

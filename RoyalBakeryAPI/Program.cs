@@ -201,6 +201,16 @@ using (var scope = app.Services.CreateScope())
                 FOREIGN KEY (MenuItemId) REFERENCES MenuItems(Id)
             );
 
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='GRNEditLogs' AND xtype='U')
+            CREATE TABLE GRNEditLogs (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                GRNId INT NOT NULL,
+                Reason NVARCHAR(MAX) NOT NULL,
+                ChangeSummary NVARCHAR(MAX) NOT NULL DEFAULT '',
+                EditedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+                FOREIGN KEY (GRNId) REFERENCES GRNs(Id)
+            );
+
             -- Add QuickCategory column if missing
             IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MenuItems') AND name = 'QuickCategory')
               ALTER TABLE MenuItems ADD QuickCategory INT NOT NULL DEFAULT 0;
@@ -285,6 +295,8 @@ Console.WriteLine("  POST /api/grn");
 Console.WriteLine("  GET  /api/adjustment");
 Console.WriteLine("  POST /api/adjustment");
 Console.WriteLine("  POST /api/adjustment/{id}/approve");
+Console.WriteLine("  PUT  /api/grn/{id}          (direct edit)");
+Console.WriteLine("  GET  /api/grn/{id}/edits    (edit history)");
 Console.WriteLine("  GET  /api/clearance");
 Console.WriteLine("  POST /api/clearance");
 

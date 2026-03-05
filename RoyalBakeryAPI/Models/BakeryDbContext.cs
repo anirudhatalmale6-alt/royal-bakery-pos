@@ -14,6 +14,7 @@ public class BakeryDbContext : DbContext
     public DbSet<GRNAdjustmentRequest> GRNAdjustmentRequests { get; set; }
     public DbSet<GRNAdjustmentRequestItem> GRNAdjustmentRequestItems { get; set; }
     public DbSet<Clearance> Clearances { get; set; }
+    public DbSet<GRNEditLog> GRNEditLogs { get; set; }
     public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -54,6 +55,12 @@ public class BakeryDbContext : DbContext
             .HasOne(c => c.MenuItem)
             .WithMany()
             .HasForeignKey(c => c.MenuItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<GRNEditLog>()
+            .HasOne(e => e.GRN)
+            .WithMany()
+            .HasForeignKey(e => e.GRNId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<GRNItem>().Property(p => p.Price).HasColumnType("decimal(18,2)");

@@ -72,6 +72,23 @@ public class AdjustmentItemResponse
     public decimal Price { get; set; }
 }
 
+// ===== Direct GRN Edit DTOs =====
+public class DirectEditGRNRequest
+{
+    public string Reason { get; set; } = string.Empty;
+    public List<AdjustmentItemDTO> Items { get; set; } = new();
+}
+
+public class GRNEditLogResponse
+{
+    public int Id { get; set; }
+    public int GRNId { get; set; }
+    public string GRNNumber { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+    public string ChangeSummary { get; set; } = string.Empty;
+    public DateTime EditedAt { get; set; }
+}
+
 // ===== Clearance DTOs =====
 public class CreateClearanceRequest
 {

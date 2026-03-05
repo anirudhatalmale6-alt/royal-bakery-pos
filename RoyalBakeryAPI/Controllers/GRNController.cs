@@ -66,6 +66,122 @@ public class GRNController : ControllerBase
         return Ok(grn);
     }
 
+    // Direct edit — no approval needed
+    [HttpPut("{id}")]
+    public async Task<ActionResult> DirectEdit(int id, [FromBody] DirectEditGRNRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Reason))
+            return BadRequest(new { message = "Reason is required" });
+
+        var grn = await _db.GRNs
+            .Include(g => g.Items)
+            .FirstOrDefaultAsync(g => g.Id == id);
+
+        if (grn == null)
+            return NotFound(new { message = $"GRN {id} not found" });
+
+        using var tx = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            var changes = new List<string>();
+
+            foreach (var reqItem in request.Items)
+            {
+                var grnItem = grn.Items.FirstOrDefault(gi => gi.MenuItemId == reqItem.MenuItemId);
+                if (grnItem == null) continue;
+
+                int soldQty = grnItem.Quantity - grnItem.CurrentQuantity;
+                if (reqItem.RequestedQuantity < soldQty)
+                {
+                    await tx.RollbackAsync();
+                    return BadRequest(new { message = $"Cannot set {reqItem.ItemName} to {reqItem.RequestedQuantity}. {soldQty} already sold." });
+                }
+
+                int qtyDiff = reqItem.RequestedQuantity - grnItem.Quantity;
+                if (qtyDiff != 0)
+                {
+                    changes.Add($"{reqItem.ItemName}: {grnItem.Quantity} → {reqItem.RequestedQuantity}");
+                    grnItem.Quantity = reqItem.RequestedQuantity;
+                    grnItem.CurrentQuantity += qtyDiff;
+
+                    var stock = await _db.Stocks.FirstOrDefaultAsync(s => s.MenuItemId == reqItem.MenuItemId);
+                    if (stock != null)
+                        stock.Quantity += qtyDiff;
+                }
+            }
+
+            // Check for removed items
+            var requestItemIds = request.Items.Select(i => i.MenuItemId).ToHashSet();
+            var removedItems = grn.Items.Where(gi => !requestItemIds.Contains(gi.MenuItemId)).ToList();
+            foreach (var removed in removedItems)
+            {
+                int soldQty = removed.Quantity - removed.CurrentQuantity;
+                if (soldQty > 0)
+                {
+                    await tx.RollbackAsync();
+                    var mi = await _db.MenuItems.FindAsync(removed.MenuItemId);
+                    return BadRequest(new { message = $"Cannot remove {mi?.Name ?? "item"}: {soldQty} already sold" });
+                }
+
+                var stock = await _db.Stocks.FirstOrDefaultAsync(s => s.MenuItemId == removed.MenuItemId);
+                if (stock != null)
+                    stock.Quantity -= removed.CurrentQuantity;
+
+                var menuItem = await _db.MenuItems.FindAsync(removed.MenuItemId);
+                changes.Add($"{menuItem?.Name ?? "Item"}: REMOVED");
+                _db.GRNItems.Remove(removed);
+            }
+
+            if (!changes.Any())
+            {
+                await tx.RollbackAsync();
+                return Ok(new { message = "No changes detected" });
+            }
+
+            _db.GRNEditLogs.Add(new GRNEditLog
+            {
+                GRNId = id,
+                Reason = request.Reason,
+                ChangeSummary = string.Join("; ", changes),
+                EditedAt = DateTime.Now
+            });
+
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+
+            return Ok(new { message = $"GRN updated. Changes: {string.Join(", ", changes)}" });
+        }
+        catch (Exception ex)
+        {
+            await tx.RollbackAsync();
+            return StatusCode(500, new { message = $"Error: {ex.Message}" });
+        }
+    }
+
+    [HttpGet("{id}/edits")]
+    public async Task<ActionResult<List<GRNEditLogResponse>>> GetEdits(int id)
+    {
+        var today = DateTime.Today;
+        var tomorrow = today.AddDays(1);
+
+        var edits = await _db.GRNEditLogs
+            .Include(e => e.GRN)
+            .Where(e => e.GRNId == id && e.EditedAt >= today && e.EditedAt < tomorrow)
+            .OrderByDescending(e => e.EditedAt)
+            .Select(e => new GRNEditLogResponse
+            {
+                Id = e.Id,
+                GRNId = e.GRNId,
+                GRNNumber = e.GRN != null ? e.GRN.GRNNumber : "",
+                Reason = e.Reason,
+                ChangeSummary = e.ChangeSummary,
+                EditedAt = e.EditedAt
+            })
+            .ToListAsync();
+
+        return Ok(edits);
+    }
+
     [HttpPost]
     public async Task<ActionResult<GRNResponse>> Create([FromBody] CreateGRNRequest request)
     {

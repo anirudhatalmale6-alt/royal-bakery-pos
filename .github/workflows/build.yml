@@ -46,31 +46,30 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.7.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.7.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.7.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.8.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.8.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.8.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.7
-          name: v1.7 - Performance Optimization + Sales Order Completion
+          tag_name: v1.8
+          name: v1.8 - Direct GRN Edit + API Update
           body: |
-            ## Changes in v1.7
-            - **POS Speed Optimization**: Items/categories now load instantly — all data cached in memory, no DB queries on filter/cart operations
-            - **Sales Order Completion**: After cashier processes payment for a sales order, it's marked as Paid (QR won't work again)
-            - **Cashier Network Config**: Cashier now includes terminal.config.sample for connecting to remote SQL Server
-            - Removed slow null-reassign UI refresh pattern
-            - All previous fixes included
+            ## Changes in v1.8
+            - **API: Direct GRN Edit** — PUT /api/grn/{id} for direct editing without approval flow
+            - **API: Edit History** — GET /api/grn/{id}/edits shows same-day edit log with reasons
+            - **GRNEditLogs table** auto-created on startup
+            - All v1.7 changes included (POS speed optimization, sales order completion, network config)
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.7.zip** — Cashier terminal EXE (includes terminal.config.sample)
-            - **RoyalBakerySalesman-v1.7.zip** — Salesman terminal EXE (includes terminal.config.sample)
-            - **RoyalBakeryAPI-v1.7.zip** — API server
+            - **RoyalBakeryCashier-v1.8.zip** — Cashier terminal EXE (includes terminal.config.sample)
+            - **RoyalBakerySalesman-v1.8.zip** — Salesman terminal EXE (includes terminal.config.sample)
+            - **RoyalBakeryAPI-v1.8.zip** — API server (updated with direct GRN edit endpoints)
           files: |
-            RoyalBakeryCashier-v1.7.zip
-            RoyalBakerySalesman-v1.7.zip
-            RoyalBakeryAPI-v1.7.zip
+            RoyalBakeryCashier-v1.8.zip
+            RoyalBakerySalesman-v1.8.zip
+            RoyalBakeryAPI-v1.8.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
