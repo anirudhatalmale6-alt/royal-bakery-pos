@@ -12,15 +12,17 @@ public partial class PaymentPage : ContentPage
     private Order _order;
     private decimal _total;
     private readonly int _orderId;
+    private readonly int? _salesOrderId;
 
     private Entry _activeEntry;
     private bool _loaded = false;
 
-    public PaymentPage(int orderId)
+    public PaymentPage(int orderId, int? salesOrderId = null)
     {
         InitializeComponent();
         _db = new StockDbContext();
         _orderId = orderId;
+        _salesOrderId = salesOrderId;
 
         CashEntry.Focused += (s, e) => SetActiveEntry(CashEntry);
         CardEntry.Focused += (s, e) => SetActiveEntry(CardEntry);
@@ -196,7 +198,15 @@ public partial class PaymentPage : ContentPage
             };
             _db.Sales.Add(sale);
 
-            // 3. Clear order data (order + items + payments)
+            // 3. Mark SalesOrder as paid (if loaded from QR scan)
+            if (_salesOrderId.HasValue)
+            {
+                var salesOrder = _db.SalesOrders.Find(_salesOrderId.Value);
+                if (salesOrder != null)
+                    salesOrder.Status = 1; // Paid — QR won't work again
+            }
+
+            // 4. Clear order data (order + items + payments)
             var payments = _db.OrderPayments.Where(p => p.OrderId == _order.Id);
             _db.OrderPayments.RemoveRange(payments);
             _db.OrderItems.RemoveRange(_order.Items);

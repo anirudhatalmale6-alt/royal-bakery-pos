@@ -12,8 +12,7 @@ namespace RoyalBakeryCashier.Pages;
 public partial class SalesmanPage : ContentPage
 {
     private readonly StockDbContext _dbContext;
-    private ObservableCollection<ItemViewModel> _allItems;
-    private ObservableCollection<ItemViewModel> _filteredItems;
+    private List<ItemViewModel> _allItems;
     private ObservableCollection<CartItem> _cartItems;
 
     private bool _loaded = false;
@@ -122,46 +121,35 @@ public partial class SalesmanPage : ContentPage
 
     private void LoadItems()
     {
-        var items = _dbContext.Stocks
+        _allItems = _dbContext.Stocks
             .Include(s => s.MenuItem)
             .Select(s => new ItemViewModel
             {
                 MenuItemId = s.MenuItemId,
                 Name = s.MenuItem.Name,
                 Price = s.MenuItem.Price,
-                AvailableStock = s.Quantity
+                AvailableStock = s.Quantity,
+                MenuCategoryId = s.MenuItem.MenuCategoryId,
+                QuickCategory = s.MenuItem.QuickCategory,
+                IsQuick = s.MenuItem.IsQuick
             })
             .ToList();
 
-        _allItems = new ObservableCollection<ItemViewModel>(items);
-        _filteredItems = new ObservableCollection<ItemViewModel>(_allItems);
-        ItemsCollectionView.ItemsSource = _filteredItems;
+        ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(_allItems);
     }
 
     private void FilterItems(int? categoryId)
     {
-        var query = _dbContext.Stocks.Include(s => s.MenuItem).AsQueryable();
+        // In-memory filtering — no DB query
+        IEnumerable<ItemViewModel> filtered = _allItems;
         if (categoryId == QUICK1_CATEGORY_ID)
-            query = query.Where(s => s.MenuItem.QuickCategory == 1 || s.MenuItem.IsQuick);
+            filtered = _allItems.Where(i => i.QuickCategory == 1 || i.IsQuick);
         else if (categoryId == QUICK2_CATEGORY_ID)
-            query = query.Where(s => s.MenuItem.QuickCategory == 2);
+            filtered = _allItems.Where(i => i.QuickCategory == 2);
         else if (categoryId != null)
-            query = query.Where(s => s.MenuItem.MenuCategoryId == categoryId);
+            filtered = _allItems.Where(i => i.MenuCategoryId == categoryId);
 
-        var items = query
-            .Select(s => new ItemViewModel
-            {
-                MenuItemId = s.MenuItemId,
-                Name = s.MenuItem.Name,
-                Price = s.MenuItem.Price,
-                AvailableStock = s.Quantity
-            })
-            .ToList();
-
-        _filteredItems.Clear();
-        foreach (var it in items)
-            _filteredItems.Add(it);
-        RefreshItemsList();
+        ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
     }
 
     private void ItemsCollectionView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -227,7 +215,6 @@ public partial class SalesmanPage : ContentPage
         menuItem.AvailableStock -= qty;
         UpdateTotal();
         RefreshCart();
-        RefreshItemsList();
     }
 
     private async void CartItemName_Tapped(object sender, TappedEventArgs e)
@@ -243,7 +230,6 @@ public partial class SalesmanPage : ContentPage
                 _cartItems.Remove(item);
                 UpdateTotal();
                 RefreshCart();
-                RefreshItemsList();
             }
         }
     }
@@ -263,7 +249,6 @@ public partial class SalesmanPage : ContentPage
 
             UpdateTotal();
             RefreshCart();
-            RefreshItemsList();
         }
     }
 
@@ -298,8 +283,13 @@ public partial class SalesmanPage : ContentPage
 
     private void ClearCart_Clicked(object sender, EventArgs e)
     {
+        // Restore stock for all cart items in-memory (no DB hit)
+        foreach (var ci in _cartItems)
+        {
+            var item = _allItems.FirstOrDefault(x => x.MenuItemId == ci.MenuItemId);
+            if (item != null) item.AvailableStock += ci.Quantity;
+        }
         _cartItems.Clear();
-        LoadItems();
         UpdateTotal();
         RefreshCart();
     }
@@ -505,14 +495,7 @@ public partial class SalesmanPage : ContentPage
 
     private void RefreshCart()
     {
-        CartCollectionView.ItemsSource = null;
-        CartCollectionView.ItemsSource = _cartItems;
-    }
-
-    private void RefreshItemsList()
-    {
-        ItemsCollectionView.ItemsSource = null;
-        ItemsCollectionView.ItemsSource = _filteredItems;
+        CartCollectionView.ItemsSource = new ObservableCollection<CartItem>(_cartItems);
     }
 
     // ===== View Models =====
@@ -531,6 +514,9 @@ public partial class SalesmanPage : ContentPage
         public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public int AvailableStock { get; set; }
+        public int MenuCategoryId { get; set; }
+        public int QuickCategory { get; set; }
+        public bool IsQuick { get; set; }
     }
 
     // ===== ORDER HISTORY PAGE =====

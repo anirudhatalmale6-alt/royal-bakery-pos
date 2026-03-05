@@ -39,35 +39,38 @@ jobs:
       - name: Publish API
         run: dotnet publish RoyalBakeryAPI/RoyalBakeryAPI.csproj -c Release -o publish/api --self-contained -r win-x64
 
-      - name: Copy sample config to Salesman
-        run: Copy-Item RoyalBakeryCashier/terminal.config.salesman.sample publish/salesman/terminal.config.sample
+      - name: Copy sample configs
+        run: |
+          Copy-Item RoyalBakeryCashier/terminal.config.cashier.sample publish/cashier/terminal.config.sample
+          Copy-Item RoyalBakeryCashier/terminal.config.salesman.sample publish/salesman/terminal.config.sample
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.6.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.6.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.6.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.7.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.7.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.7.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.6
-          name: v1.6 - Fixed .csproj Page References
+          tag_name: v1.7
+          name: v1.7 - Performance Optimization + Sales Order Completion
           body: |
-            ## Changes in v1.6
-            - Fixed .csproj files: added missing MauiXaml entries for SalesmanPage, SalesHistoryPage, LauncherPage
-            - Fixed DependentUpon for SalesmanPage.xaml.cs in both project files
-            - Resolves Visual Studio build errors
+            ## Changes in v1.7
+            - **POS Speed Optimization**: Items/categories now load instantly — all data cached in memory, no DB queries on filter/cart operations
+            - **Sales Order Completion**: After cashier processes payment for a sales order, it's marked as Paid (QR won't work again)
+            - **Cashier Network Config**: Cashier now includes terminal.config.sample for connecting to remote SQL Server
+            - Removed slow null-reassign UI refresh pattern
             - All previous fixes included
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.6.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.6.zip** — Salesman terminal EXE (includes terminal.config.sample)
-            - **RoyalBakeryAPI-v1.6.zip** — API server
+            - **RoyalBakeryCashier-v1.7.zip** — Cashier terminal EXE (includes terminal.config.sample)
+            - **RoyalBakerySalesman-v1.7.zip** — Salesman terminal EXE (includes terminal.config.sample)
+            - **RoyalBakeryAPI-v1.7.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.6.zip
-            RoyalBakerySalesman-v1.6.zip
-            RoyalBakeryAPI-v1.6.zip
+            RoyalBakeryCashier-v1.7.zip
+            RoyalBakerySalesman-v1.7.zip
+            RoyalBakeryAPI-v1.7.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

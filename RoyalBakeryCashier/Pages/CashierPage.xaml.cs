@@ -12,11 +12,11 @@ namespace RoyalBakeryCashier.Pages
     public partial class CashierPage : ContentPage
     {
         private readonly StockDbContext _dbContext;
-        private ObservableCollection<ItemViewModel> _allItems;
-        private ObservableCollection<ItemViewModel> _filteredItems;
+        private List<ItemViewModel> _allItems;
         private ObservableCollection<CartItem> _cartItems;
 
         private bool _loaded = false;
+        private int? _loadedSalesOrderId = null; // Track loaded SalesOrder for completion
 
         public CashierPage()
         {
@@ -309,10 +309,10 @@ namespace RoyalBakeryCashier.Pages
                 }
             }
 
+            _loadedSalesOrderId = salesOrder.Id; // Track for completion after payment
             SalesOrderEntry.Text = string.Empty;
             UpdateTotal();
             RefreshCart();
-            RefreshItemsList();
 
             string info = salesOrder.CustomerName != null
                 ? $"Loaded {salesOrder.SalesOrderNumber} ({salesOrder.CustomerName}) — {_cartItems.Count} items"
@@ -323,47 +323,35 @@ namespace RoyalBakeryCashier.Pages
 
         private void LoadItems()
         {
-            var items = _dbContext.Stocks
+            _allItems = _dbContext.Stocks
                 .Include(s => s.MenuItem)
                 .Select(s => new ItemViewModel
                 {
                     MenuItemId = s.MenuItemId,
                     Name = s.MenuItem.Name,
                     Price = s.MenuItem.Price,
-                    AvailableStock = s.Quantity
+                    AvailableStock = s.Quantity,
+                    MenuCategoryId = s.MenuItem.MenuCategoryId,
+                    QuickCategory = s.MenuItem.QuickCategory,
+                    IsQuick = s.MenuItem.IsQuick
                 })
                 .ToList();
 
-            _allItems = new ObservableCollection<ItemViewModel>(items);
-            _filteredItems = new ObservableCollection<ItemViewModel>(_allItems);
-            ItemsCollectionView.ItemsSource = _filteredItems;
+            ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(_allItems);
         }
 
         private void FilterItems(int? categoryId)
         {
-            var query = _dbContext.Stocks.Include(s => s.MenuItem).AsQueryable();
+            // In-memory filtering — no DB query
+            IEnumerable<ItemViewModel> filtered = _allItems;
             if (categoryId == QUICK1_CATEGORY_ID)
-                query = query.Where(s => s.MenuItem.QuickCategory == 1 || s.MenuItem.IsQuick);
+                filtered = _allItems.Where(i => i.QuickCategory == 1 || i.IsQuick);
             else if (categoryId == QUICK2_CATEGORY_ID)
-                query = query.Where(s => s.MenuItem.QuickCategory == 2);
+                filtered = _allItems.Where(i => i.QuickCategory == 2);
             else if (categoryId != null)
-                query = query.Where(s => s.MenuItem.MenuCategoryId == categoryId);
+                filtered = _allItems.Where(i => i.MenuCategoryId == categoryId);
 
-            var items = query
-                .Select(s => new ItemViewModel
-                {
-                    MenuItemId = s.MenuItemId,
-                    Name = s.MenuItem.Name,
-                    Price = s.MenuItem.Price,
-                    AvailableStock = s.Quantity
-                })
-                .ToList();
-
-            _filteredItems.Clear();
-            foreach (var it in items)
-                _filteredItems.Add(it);
-
-            RefreshItemsList();
+            ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
         }
 
         private void ItemsCollectionView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -431,13 +419,6 @@ namespace RoyalBakeryCashier.Pages
 
             UpdateTotal();
             RefreshCart();
-            RefreshItemsList();
-        }
-
-        private void RefreshItemsList()
-        {
-            ItemsCollectionView.ItemsSource = null;
-            ItemsCollectionView.ItemsSource = _filteredItems;
         }
 
         private void Keypad_Clicked(object sender, EventArgs e)
@@ -450,8 +431,14 @@ namespace RoyalBakeryCashier.Pages
 
         private void ClearCart_Clicked(object sender, EventArgs e)
         {
+            // Restore stock for all cart items
+            foreach (var ci in _cartItems)
+            {
+                var item = _allItems.FirstOrDefault(x => x.MenuItemId == ci.MenuItemId);
+                if (item != null) item.AvailableStock += ci.Quantity;
+            }
             _cartItems.Clear();
-            LoadItems();
+            _loadedSalesOrderId = null;
             UpdateTotal();
             RefreshCart();
             SalesOrderEntry.Focus();
@@ -485,11 +472,12 @@ namespace RoyalBakeryCashier.Pages
                 _dbContext.Orders.Add(order);
                 await _dbContext.SaveChangesAsync();
 
-                await Navigation.PushModalAsync(new NavigationPage(new PaymentPage(order.Id))
+                await Navigation.PushModalAsync(new NavigationPage(new PaymentPage(order.Id, _loadedSalesOrderId))
                 {
                     BarBackgroundColor = Color.FromArgb("#1A1A1A"),
                     BarTextColor = Colors.White
                 });
+                _loadedSalesOrderId = null;
             }
             catch (Exception ex)
             {
@@ -514,7 +502,6 @@ namespace RoyalBakeryCashier.Pages
                     _cartItems.Remove(item);
                     UpdateTotal();
                     RefreshCart();
-                    RefreshItemsList();
                 }
             }
         }
@@ -535,7 +522,6 @@ namespace RoyalBakeryCashier.Pages
 
                 UpdateTotal();
                 RefreshCart();
-                RefreshItemsList();
             }
         }
 
@@ -565,8 +551,7 @@ namespace RoyalBakeryCashier.Pages
 
         private void RefreshCart()
         {
-            CartCollectionView.ItemsSource = null;
-            CartCollectionView.ItemsSource = _cartItems;
+            CartCollectionView.ItemsSource = new ObservableCollection<CartItem>(_cartItems);
         }
 
         public class CartItem
@@ -584,6 +569,9 @@ namespace RoyalBakeryCashier.Pages
             public string Name { get; set; } = string.Empty;
             public decimal Price { get; set; }
             public int AvailableStock { get; set; }
+            public int MenuCategoryId { get; set; }
+            public int QuickCategory { get; set; }
+            public bool IsQuick { get; set; }
         }
     }
 }
