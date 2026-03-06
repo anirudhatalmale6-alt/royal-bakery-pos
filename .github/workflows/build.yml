@@ -46,30 +46,29 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.8.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.8.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.8.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.9.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.9.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.9.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.8
-          name: v1.8 - Direct GRN Edit + API Update
+          tag_name: v1.9
+          name: v1.9 - QR Fix + Load Button + All Fixes
           body: |
-            ## Changes in v1.8
-            - **API: Direct GRN Edit** — PUT /api/grn/{id} for direct editing without approval flow
-            - **API: Edit History** — GET /api/grn/{id}/edits shows same-day edit log with reasons
-            - **GRNEditLogs table** auto-created on startup
-            - All v1.7 changes included (POS speed optimization, sales order completion, network config)
+            ## Changes in v1.9
+            - **QR Duplicate Billing Fix** — Cleared EF cache before SalesOrder lookup; already-billed QR codes now correctly show "Already Paid" popup
+            - **Load Button** — Made bigger and bolder for easier touch on POS terminal
+            - All previous fixes included (v1.8 direct GRN edit, v1.7 speed optimization, etc.)
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.8.zip** — Cashier terminal EXE (includes terminal.config.sample)
-            - **RoyalBakerySalesman-v1.8.zip** — Salesman terminal EXE (includes terminal.config.sample)
-            - **RoyalBakeryAPI-v1.8.zip** — API server (updated with direct GRN edit endpoints)
+            - **RoyalBakeryCashier-v1.9.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.9.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.9.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.8.zip
-            RoyalBakerySalesman-v1.8.zip
-            RoyalBakeryAPI-v1.8.zip
+            RoyalBakeryCashier-v1.9.zip
+            RoyalBakerySalesman-v1.9.zip
+            RoyalBakeryAPI-v1.9.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

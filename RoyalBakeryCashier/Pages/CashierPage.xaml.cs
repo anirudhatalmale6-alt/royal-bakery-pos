@@ -243,6 +243,9 @@ namespace RoyalBakeryCashier.Pages
                 return;
             }
 
+            // Clear EF cache so we always get fresh status from DB
+            _dbContext.ChangeTracker.Clear();
+
             // Search by exact SalesOrderNumber or by Id
             var salesOrder = _dbContext.SalesOrders
                 .Include(so => so.Items)
