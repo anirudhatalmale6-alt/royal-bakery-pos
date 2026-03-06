@@ -27,28 +27,28 @@
                 <Frame BackgroundColor="{StaticResource InputBg}"
                        Padding="0" CornerRadius="8"
                        BorderColor="{StaticResource Gray600}"
-                       HeightRequest="32">
-                    <HorizontalStackLayout Spacing="4" Padding="8,0">
-                        <Entry x:Name="SalesOrderEntry"
-                               Placeholder="Sales Order ID..."
-                               PlaceholderColor="{StaticResource Gray400}"
-                               TextColor="White"
-                               FontSize="12"
-                               WidthRequest="120"
-                               HeightRequest="32"
-                               BackgroundColor="Transparent"
-                               Completed="SalesOrderEntry_Completed"/>
-                        <Button Text="Load"
-                                FontSize="14"
-                                FontAttributes="Bold"
-                                HeightRequest="32"
-                                Padding="14,0"
-                                CornerRadius="6"
-                                BackgroundColor="{StaticResource CatDrinks}"
-                                TextColor="White"
-                                Clicked="LoadSalesOrder_Clicked"/>
-                    </HorizontalStackLayout>
+                       HeightRequest="38">
+                    <Entry x:Name="SalesOrderEntry"
+                           Placeholder="Scan / Enter Order ID..."
+                           PlaceholderColor="{StaticResource Gray400}"
+                           TextColor="White"
+                           FontSize="13"
+                           WidthRequest="180"
+                           HeightRequest="38"
+                           Margin="10,0"
+                           BackgroundColor="Transparent"
+                           Completed="SalesOrderEntry_Completed"/>
                 </Frame>
+                <Button Text="LOAD ORDER"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        HeightRequest="42"
+                        WidthRequest="140"
+                        Padding="16,0"
+                        CornerRadius="8"
+                        BackgroundColor="{StaticResource CatDrinks}"
+                        TextColor="White"
+                        Clicked="LoadSalesOrder_Clicked"/>
                 <Button Text="Report"
                         FontSize="12"
                         HeightRequest="32"
