@@ -138,9 +138,42 @@ public partial class SalesmanPage : ContentPage
         ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(_allItems);
     }
 
+    private int? _currentCategoryId = null;
+
     private void FilterItems(int? categoryId)
     {
-        // In-memory filtering — no DB query
+        _currentCategoryId = categoryId;
+        ItemSearchEntry.Text = string.Empty;
+
+        IEnumerable<ItemViewModel> filtered = _allItems;
+        if (categoryId == QUICK1_CATEGORY_ID)
+            filtered = _allItems.Where(i => i.QuickCategory == 1 || i.IsQuick);
+        else if (categoryId == QUICK2_CATEGORY_ID)
+            filtered = _allItems.Where(i => i.QuickCategory == 2);
+        else if (categoryId != null)
+            filtered = _allItems.Where(i => i.MenuCategoryId == categoryId);
+
+        ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+    }
+
+    private void ItemSearchEntry_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var keyword = (e.NewTextValue ?? "").Trim();
+        if (string.IsNullOrEmpty(keyword))
+        {
+            FilterItemsWithoutClearingSearch(_currentCategoryId);
+            return;
+        }
+
+        var filtered = _allItems
+            .Where(i => i.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+    }
+
+    private void FilterItemsWithoutClearingSearch(int? categoryId)
+    {
         IEnumerable<ItemViewModel> filtered = _allItems;
         if (categoryId == QUICK1_CATEGORY_ID)
             filtered = _allItems.Where(i => i.QuickCategory == 1 || i.IsQuick);

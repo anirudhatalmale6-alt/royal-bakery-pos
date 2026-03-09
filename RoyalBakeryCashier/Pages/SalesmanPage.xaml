@@ -75,10 +75,28 @@
 
                     <VerticalStackLayout Spacing="6">
 
-                        <Label Text="Items"
-                               FontSize="14"
-                               FontAttributes="Bold"
-                               TextColor="White"/>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <Label Text="Items"
+                                   FontSize="14"
+                                   FontAttributes="Bold"
+                                   TextColor="White"
+                                   VerticalOptions="Center"/>
+                            <Frame Grid.Column="1"
+                                   BackgroundColor="{StaticResource InputBg}"
+                                   Padding="0" CornerRadius="8"
+                                   BorderColor="{StaticResource Gray600}"
+                                   HeightRequest="32">
+                                <Entry x:Name="ItemSearchEntry"
+                                       Placeholder="Search items..."
+                                       PlaceholderColor="{StaticResource Gray400}"
+                                       TextColor="White"
+                                       FontSize="13"
+                                       HeightRequest="32"
+                                       Margin="10,0"
+                                       BackgroundColor="Transparent"
+                                       TextChanged="ItemSearchEntry_TextChanged"/>
+                            </Frame>
+                        </Grid>
 
                         <CollectionView x:Name="ItemsCollectionView"
                                         SelectionMode="Single"
