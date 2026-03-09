@@ -34,19 +34,14 @@ public partial class SalesmanPage : ContentPage
 
         try
         {
+            // Salesman connects to remote DB — skip EnsureCreated/ApplyMigrations
+            // (database is created by the API/Cashier on the server machine)
             await Task.Run(() =>
             {
-                _dbContext.Database.EnsureCreated();
-                bool alreadySeeded = false;
-                try { alreadySeeded = _dbContext.MenuCategories.Any(); } catch { }
-                if (!alreadySeeded)
-                    _dbContext.ApplyMigrations();
-                else
-                {
-                    try { _dbContext.Database.ExecuteSqlRaw(
-                        @"IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MenuItems') AND name = 'QuickCategory')
-                          ALTER TABLE MenuItems ADD QuickCategory INT NOT NULL DEFAULT 0;"); } catch { }
-                }
+                // Just ensure QuickCategory column exists (safe schema patch)
+                try { _dbContext.Database.ExecuteSqlRaw(
+                    @"IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MenuItems') AND name = 'QuickCategory')
+                      ALTER TABLE MenuItems ADD QuickCategory INT NOT NULL DEFAULT 0;"); } catch { }
             });
             LoadCategories();
             LoadItems();
