@@ -46,29 +46,29 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.14.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.14.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.14.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.15.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.15.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.15.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14
-          name: v1.14 - Salesman Permission Fix
+          tag_name: v1.15
+          name: v1.15 - Connection Retry + Better Errors
           body: |
-            ## Changes in v1.14
-            - **FIX**: Salesman terminal no longer tries to CREATE DATABASE on the remote server — fixes "CREATE DATABASE permission denied in database 'master'" error
-            - Salesman now connects to the existing database created by the API/Cashier
-            - Includes all v1.13 fixes (seed data loading, bakery menu items)
+            ## Changes in v1.15
+            - **FIX**: Added EnableRetryOnFailure to SQL Server connection — auto-retries on transient network failures
+            - **FIX**: Login error now shows the actual underlying cause instead of generic EF Core wrapper message
+            - Includes all previous fixes (Salesman permission, seed data, bakery menu items)
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.14.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.14.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.14.zip** — API server
+            - **RoyalBakeryCashier-v1.15.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.15.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.15.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.14.zip
-            RoyalBakerySalesman-v1.14.zip
-            RoyalBakeryAPI-v1.14.zip
+            RoyalBakeryCashier-v1.15.zip
+            RoyalBakerySalesman-v1.15.zip
+            RoyalBakeryAPI-v1.15.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

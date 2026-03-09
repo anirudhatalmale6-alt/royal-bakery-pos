@@ -101,7 +101,8 @@ public partial class LoginPage : ContentPage
         catch (Exception ex)
         {
             App.LogCrash("Login", ex);
-            ShowError($"Connection error: {ex.Message}");
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            ShowError($"Connection error: {msg}");
         }
         finally
         {
