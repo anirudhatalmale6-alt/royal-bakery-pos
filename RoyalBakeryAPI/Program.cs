@@ -233,9 +233,9 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("Default admin user created (admin/admin123)");
         }
 
-        // Seed menu data — check if new restaurant items already loaded
+        // Seed menu data — check if bakery items already loaded
         bool hasNewMenuData = false;
-        try { hasNewMenuData = db.MenuCategories.Any(c => c.Name == "RICE"); } catch { }
+        try { hasNewMenuData = db.MenuCategories.Any(c => c.Name == "CAKES"); } catch { }
         if (!hasNewMenuData)
         {
             try
@@ -247,7 +247,7 @@ using (var scope = app.Services.CreateScope())
                     using var reader = new StreamReader(stream);
                     string seedSql = reader.ReadToEnd();
                     db.Database.ExecuteSqlRaw(seedSql);
-                    Console.WriteLine("Menu data seeded: 6 categories, 64 restaurant items, stocks (qty 10), initial GRN created.");
+                    Console.WriteLine("Menu data seeded: 18 categories, 200 bakery items, stocks (qty 10), initial GRN created.");
                 }
                 else
                 {

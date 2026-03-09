@@ -46,31 +46,31 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.11.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.11.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.11.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.12.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.12.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.12.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.11
-          name: v1.11 - Item Search + New Restaurant Menu
+          tag_name: v1.12
+          name: v1.12 - Bakery Menu (200 Items)
           body: |
-            ## Changes in v1.11
-            - **Item Search Bar** — Search items by name across all categories for instant access
-            - **New Menu Data** — 64 restaurant items in 6 categories (Rice, Dinner, Curry, Beverages, Side Dishes, Lunch Pack)
-            - **Old bakery items cleared** — Database reseeded with restaurant items only
-            - **Quicks 1 & 2 empty** — Client can assign items to quick categories later
+            ## Changes in v1.12
+            - **Bakery Menu** — 200 items across 18 categories from RB Shop.xlsx
+            - Categories: Cakes, Gateau'X, Speciality Cakes, Desserts, Sweet Patisserie, Biscuits, Cookies, Beverages, Bread, Buns, Croissant, Fried Rolls, Rotty, Patty, Cutlet, Savoury Pastries/Wraps, Sri Lankan Sweets, Sandwiches
+            - **Quicks 1 & 2 empty** — Client can assign items later
+            - **Item Search Bar** — Search items by name across all categories
             - All previous fixes included
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.11.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.11.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.11.zip** — API server
+            - **RoyalBakeryCashier-v1.12.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.12.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.12.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.11.zip
-            RoyalBakerySalesman-v1.11.zip
-            RoyalBakeryAPI-v1.11.zip
+            RoyalBakeryCashier-v1.12.zip
+            RoyalBakerySalesman-v1.12.zip
+            RoyalBakeryAPI-v1.12.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
