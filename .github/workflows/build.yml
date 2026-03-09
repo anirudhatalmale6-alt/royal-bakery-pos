@@ -46,31 +46,31 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.12.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.12.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.12.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.13.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.13.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.13.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.12
-          name: v1.12 - Bakery Menu (200 Items)
+          tag_name: v1.13
+          name: v1.13 - Seed Data Fix
           body: |
-            ## Changes in v1.12
-            - **Bakery Menu** — 200 items across 18 categories from RB Shop.xlsx
-            - Categories: Cakes, Gateau'X, Speciality Cakes, Desserts, Sweet Patisserie, Biscuits, Cookies, Beverages, Bread, Buns, Croissant, Fried Rolls, Rotty, Patty, Cutlet, Savoury Pastries/Wraps, Sri Lankan Sweets, Sandwiches
-            - **Quicks 1 & 2 empty** — Client can assign items later
-            - **Item Search Bar** — Search items by name across all categories
-            - All previous fixes included
+            ## Changes in v1.13
+            - **CRITICAL FIX**: Fixed seed data not loading — SQL batch was rejected due to referencing non-existent GRN columns (DateTime, TotalItems, TotalQuantity)
+            - Fixed foreign key constraint errors when seeding on existing databases
+            - Properly clears all dependent tables (Sales, Orders, Clearances, etc.) before re-seeding menu items
+            - All 200 bakery items across 18 categories now load correctly
+            - All previous fixes included (search bar, load button, QR duplicate check)
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.12.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.12.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.12.zip** — API server
+            - **RoyalBakeryCashier-v1.13.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.13.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.13.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.12.zip
-            RoyalBakerySalesman-v1.12.zip
-            RoyalBakeryAPI-v1.12.zip
+            RoyalBakeryCashier-v1.13.zip
+            RoyalBakerySalesman-v1.13.zip
+            RoyalBakeryAPI-v1.13.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

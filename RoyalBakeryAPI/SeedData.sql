@@ -1,5 +1,16 @@
 -- Royal Bakery Shop Items - Auto-generated from RB Shop.xlsx
--- Clears all existing items and reloads
+-- Clears all existing data and reloads (handles FK constraints)
+IF OBJECT_ID('SaleItems', 'U') IS NOT NULL DELETE FROM SaleItems;
+IF OBJECT_ID('Sales', 'U') IS NOT NULL DELETE FROM Sales;
+IF OBJECT_ID('OrderItems', 'U') IS NOT NULL DELETE FROM OrderItems;
+IF OBJECT_ID('OrderPayments', 'U') IS NOT NULL DELETE FROM OrderPayments;
+IF OBJECT_ID('Orders', 'U') IS NOT NULL DELETE FROM Orders;
+IF OBJECT_ID('SalesOrderItems', 'U') IS NOT NULL DELETE FROM SalesOrderItems;
+IF OBJECT_ID('SalesOrders', 'U') IS NOT NULL DELETE FROM SalesOrders;
+IF OBJECT_ID('GRNEditLogs', 'U') IS NOT NULL DELETE FROM GRNEditLogs;
+IF OBJECT_ID('GRNAdjustmentRequestItems', 'U') IS NOT NULL DELETE FROM GRNAdjustmentRequestItems;
+IF OBJECT_ID('GRNAdjustmentRequests', 'U') IS NOT NULL DELETE FROM GRNAdjustmentRequests;
+IF OBJECT_ID('Clearances', 'U') IS NOT NULL DELETE FROM Clearances;
 DELETE FROM Stocks;
 DELETE FROM GRNItems;
 DELETE FROM GRNs;
@@ -230,5 +241,5 @@ INSERT INTO MenuItems (Name, Price, MenuCategoryId, IsQuick, QuickCategory) VALU
 INSERT INTO Stocks (MenuItemId, Quantity) SELECT Id, 10 FROM MenuItems;
 
 -- Initial GRN
-INSERT INTO GRNs (GRNNumber, DateTime, TotalItems, TotalQuantity) SELECT 'GRN-INIT', GETDATE(), COUNT(*), COUNT(*) * 10 FROM MenuItems;
+INSERT INTO GRNs (GRNNumber, CreatedAt) VALUES ('GRN-INIT', GETDATE());
 INSERT INTO GRNItems (GRNId, MenuItemId, Quantity, CurrentQuantity, Price) SELECT (SELECT TOP 1 Id FROM GRNs ORDER BY Id DESC), Id, 10, 10, Price FROM MenuItems;
