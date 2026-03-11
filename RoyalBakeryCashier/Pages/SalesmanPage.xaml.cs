@@ -199,19 +199,20 @@ public partial class SalesmanPage : ContentPage
     {
         if (qty <= 0) return;
 
-        var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);
         int available = menuItem.AvailableStock;
-
-        // Silent stock checks — no popups
         if (available <= 0) return;
         if (qty > available) qty = available;
 
+        var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);
         if (existing != null)
         {
             int canAdd = Math.Min(qty, available);
             existing.Quantity += canAdd;
             existing.Total = existing.Quantity * existing.Price;
             menuItem.AvailableStock -= canAdd;
+            // In-place update: remove and re-insert at same index to notify UI
+            int idx = _cartItems.IndexOf(existing);
+            _cartItems[idx] = existing;
         }
         else
         {
@@ -227,7 +228,6 @@ public partial class SalesmanPage : ContentPage
         }
 
         UpdateTotal();
-        RefreshCart();
     }
 
     private async void CartItemName_Tapped(object sender, TappedEventArgs e)
@@ -240,9 +240,8 @@ public partial class SalesmanPage : ContentPage
             {
                 var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
                 if (menuItem != null) menuItem.AvailableStock += item.Quantity;
-                _cartItems.Remove(item);
+                _cartItems.Remove(item); // ObservableCollection auto-notifies UI
                 UpdateTotal();
-                RefreshCart();
             }
         }
     }
@@ -251,17 +250,22 @@ public partial class SalesmanPage : ContentPage
     {
         if (sender is Button btn && btn.CommandParameter is CartItem item)
         {
-            item.Quantity--;
-            if (item.Quantity <= 0)
-                _cartItems.Remove(item);
-            else
-                item.Total = item.Quantity * item.Price;
-
             var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
             if (menuItem != null) menuItem.AvailableStock++;
 
+            item.Quantity--;
+            if (item.Quantity <= 0)
+            {
+                _cartItems.Remove(item);
+            }
+            else
+            {
+                item.Total = item.Quantity * item.Price;
+                int idx = _cartItems.IndexOf(item);
+                if (idx >= 0) _cartItems[idx] = item; // notify UI
+            }
+
             UpdateTotal();
-            RefreshCart();
         }
     }
 
@@ -275,10 +279,10 @@ public partial class SalesmanPage : ContentPage
                 item.Quantity++;
                 item.Total = item.Quantity * item.Price;
                 menuItem.AvailableStock--;
+                int idx = _cartItems.IndexOf(item);
+                if (idx >= 0) _cartItems[idx] = item; // notify UI
             }
-            // No popup — silent when out of stock
             UpdateTotal();
-            RefreshCart();
         }
     }
 
@@ -298,9 +302,8 @@ public partial class SalesmanPage : ContentPage
             var item = _allItems.FirstOrDefault(x => x.MenuItemId == ci.MenuItemId);
             if (item != null) item.AvailableStock += ci.Quantity;
         }
-        _cartItems.Clear();
+        _cartItems.Clear(); // ObservableCollection auto-notifies UI
         UpdateTotal();
-        RefreshCart();
     }
 
     // ===== CREATE SALES ORDER =====
@@ -342,11 +345,9 @@ public partial class SalesmanPage : ContentPage
             "OK");
 
         // Clear cart for next order
-        _cartItems.Clear();
+        _cartItems.Clear(); // ObservableCollection auto-notifies UI
         CustomerNameEntry.Text = string.Empty;
-        LoadItems();
         UpdateTotal();
-        RefreshCart();
     }
 
     private async Task PrintOrderSlip(SalesOrder order)
@@ -491,11 +492,6 @@ public partial class SalesmanPage : ContentPage
     }
 
     private void UpdateTotal() => TotalLabel.Text = $"Total: Rs. {_cartItems.Sum(c => c.Total):F2}";
-
-    private void RefreshCart()
-    {
-        CartCollectionView.ItemsSource = new ObservableCollection<CartItem>(_cartItems);
-    }
 
     // ===== View Models =====
     public class CartItem

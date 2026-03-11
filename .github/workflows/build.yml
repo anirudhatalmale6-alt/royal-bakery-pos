@@ -46,31 +46,31 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.16.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.16.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.16.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.17.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.17.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.17.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.16
-          name: v1.16 - QR Auto-Load + Popup Cleanup + Speed
+          tag_name: v1.17
+          name: v1.17 - Salesman + Cashier Speed Optimization
           body: |
-            ## Changes in v1.16
-            - **QR Scanner**: Auto-loads order on scan (no need to click Load), focus stays on scan field, clears previous QR
-            - **Load Button**: Made bigger (52px height, 180px width, 18px font)
-            - **Popups Removed**: All unnecessary popups removed (stock, empty cart, printer errors) — only "Bill Already Completed" and "Success" messages remain
-            - **Speed**: Silent stock checks, no popup delays on add-to-cart
+            ## Changes in v1.17
+            - **PERFORMANCE FIX**: Eliminated RefreshCart() which was recreating the entire cart CollectionView on every single add/remove/increase/decrease — this was the root cause of 2-5 second delays
+            - Cart now uses ObservableCollection properly: Add/Remove auto-notify UI, in-place updates use index replacement
+            - Both Cashier and Salesman terminals optimized
+            - QR Scanner auto-load, bigger Load button, popup cleanup from v1.16 included
             - Includes all previous fixes
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.16.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.16.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.16.zip** — API server
+            - **RoyalBakeryCashier-v1.17.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.17.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.17.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.16.zip
-            RoyalBakerySalesman-v1.16.zip
-            RoyalBakeryAPI-v1.16.zip
+            RoyalBakeryCashier-v1.17.zip
+            RoyalBakerySalesman-v1.17.zip
+            RoyalBakeryAPI-v1.17.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

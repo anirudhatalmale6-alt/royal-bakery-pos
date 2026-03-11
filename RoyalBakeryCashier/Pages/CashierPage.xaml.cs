@@ -69,10 +69,9 @@ namespace RoyalBakeryCashier.Pages
             }
 
             // Always reload items and clear cart when page reappears (e.g., after payment modal closes)
-            _cartItems.Clear();
+            _cartItems.Clear(); // ObservableCollection auto-notifies UI
             LoadItems();
             UpdateTotal();
-            RefreshCart();
 
             // Keep focus on the sales order entry for scanner input
             // Delay focus slightly so MAUI layout is complete
@@ -329,7 +328,6 @@ namespace RoyalBakeryCashier.Pages
 
             _loadedSalesOrderId = salesOrder.Id;
             UpdateTotal();
-            RefreshCart();
             SalesOrderEntry.Focus(); // Keep focus on scanner entry
         }
 
@@ -422,22 +420,19 @@ namespace RoyalBakeryCashier.Pages
         {
             if (qty <= 0) return;
 
-            var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);
-            int inCart = existing?.Quantity ?? 0;
             int available = menuItem.AvailableStock;
-
-            // Silent stock checks — no popups
             if (available <= 0) return;
-            if (qty > available) qty = available; // silently cap
-            if (existing != null && inCart + qty > available + inCart)
-                return;
+            if (qty > available) qty = available;
 
+            var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);
             if (existing != null)
             {
                 int canAdd = Math.Min(qty, available);
                 existing.Quantity += canAdd;
                 existing.Total = existing.Quantity * existing.Price;
                 menuItem.AvailableStock -= canAdd;
+                int idx = _cartItems.IndexOf(existing);
+                _cartItems[idx] = existing; // notify UI without full re-render
             }
             else
             {
@@ -453,7 +448,6 @@ namespace RoyalBakeryCashier.Pages
             }
 
             UpdateTotal();
-            RefreshCart();
         }
 
         private void Keypad_Clicked(object sender, EventArgs e)
@@ -466,16 +460,14 @@ namespace RoyalBakeryCashier.Pages
 
         private void ClearCart_Clicked(object sender, EventArgs e)
         {
-            // Restore stock for all cart items
             foreach (var ci in _cartItems)
             {
                 var item = _allItems.FirstOrDefault(x => x.MenuItemId == ci.MenuItemId);
                 if (item != null) item.AvailableStock += ci.Quantity;
             }
-            _cartItems.Clear();
+            _cartItems.Clear(); // ObservableCollection auto-notifies UI
             _loadedSalesOrderId = null;
             UpdateTotal();
-            RefreshCart();
             SalesOrderEntry.Focus();
         }
 
@@ -525,14 +517,12 @@ namespace RoyalBakeryCashier.Pages
 
                 if (confirm)
                 {
-                    // Restore stock
                     var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
                     if (menuItem != null)
                         menuItem.AvailableStock += item.Quantity;
 
-                    _cartItems.Remove(item);
+                    _cartItems.Remove(item); // ObservableCollection auto-notifies UI
                     UpdateTotal();
-                    RefreshCart();
                 }
             }
         }
@@ -541,18 +531,22 @@ namespace RoyalBakeryCashier.Pages
         {
             if (sender is Button btn && btn.CommandParameter is CartItem item)
             {
+                var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
+                if (menuItem != null) menuItem.AvailableStock++;
+
                 item.Quantity--;
                 if (item.Quantity <= 0)
+                {
                     _cartItems.Remove(item);
+                }
                 else
+                {
                     item.Total = item.Quantity * item.Price;
-
-                var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
-                if (menuItem != null)
-                    menuItem.AvailableStock++;
+                    int idx = _cartItems.IndexOf(item);
+                    if (idx >= 0) _cartItems[idx] = item; // notify UI
+                }
 
                 UpdateTotal();
-                RefreshCart();
             }
         }
 
@@ -566,20 +560,15 @@ namespace RoyalBakeryCashier.Pages
                     item.Quantity++;
                     item.Total = item.Quantity * item.Price;
                     menuItem.AvailableStock--;
+                    int idx = _cartItems.IndexOf(item);
+                    if (idx >= 0) _cartItems[idx] = item; // notify UI
                 }
-                // No popup — silent when out of stock
 
                 UpdateTotal();
-                RefreshCart();
             }
         }
 
         private void UpdateTotal() => TotalLabel.Text = $"Total: Rs. {_cartItems.Sum(c => c.Total):F2}";
-
-        private void RefreshCart()
-        {
-            CartCollectionView.ItemsSource = new ObservableCollection<CartItem>(_cartItems);
-        }
 
         public class CartItem
         {
