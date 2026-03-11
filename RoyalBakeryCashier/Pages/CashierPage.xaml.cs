@@ -75,6 +75,9 @@ namespace RoyalBakeryCashier.Pages
             RefreshCart();
 
             // Keep focus on the sales order entry for scanner input
+            // Delay focus slightly so MAUI layout is complete
+            await Task.Delay(100);
+            SalesOrderEntry.Text = string.Empty; // clear any previous scan
             SalesOrderEntry.Focus();
         }
 
@@ -224,24 +227,47 @@ namespace RoyalBakeryCashier.Pages
         }
 
         // ===== SALES ORDER LOADING =====
+
+        // Timer for barcode scanner auto-load: scanners type fast then press Enter,
+        // but we also auto-load after a short delay in case Enter isn't sent
+        private CancellationTokenSource? _scanDebounce;
+
+        private void SalesOrderEntry_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Barcode scanners type characters rapidly then may or may not send Enter.
+            // Debounce: if text stops changing for 400ms and length >= 3, auto-load.
+            _scanDebounce?.Cancel();
+            var text = (e.NewTextValue ?? "").Trim();
+            if (text.Length < 3) return;
+
+            _scanDebounce = new CancellationTokenSource();
+            var token = _scanDebounce.Token;
+            Task.Delay(400, token).ContinueWith(t =>
+            {
+                if (!t.IsCanceled)
+                    MainThread.BeginInvokeOnMainThread(() => LoadSalesOrderFromSearch());
+            });
+        }
+
         private void SalesOrderEntry_Completed(object sender, EventArgs e)
         {
+            _scanDebounce?.Cancel(); // Cancel debounce since Enter was pressed
             LoadSalesOrderFromSearch();
         }
 
         private void LoadSalesOrder_Clicked(object sender, EventArgs e)
         {
+            _scanDebounce?.Cancel();
             LoadSalesOrderFromSearch();
         }
 
         private async void LoadSalesOrderFromSearch()
         {
             var searchText = (SalesOrderEntry.Text ?? "").Trim();
-            if (string.IsNullOrEmpty(searchText))
-            {
-                await DisplayAlert("Search", "Please enter a Sales Order ID.", "OK");
-                return;
-            }
+            if (string.IsNullOrEmpty(searchText)) return; // silent — no popup for empty
+
+            // Always clear the entry first (erase previous QR code)
+            SalesOrderEntry.Text = string.Empty;
 
             // Clear EF cache so we always get fresh status from DB
             _dbContext.ChangeTracker.Clear();
@@ -255,19 +281,24 @@ namespace RoyalBakeryCashier.Pages
 
             if (salesOrder == null)
             {
-                await DisplayAlert("Not Found", $"Sales Order \"{searchText}\" not found.", "OK");
+                // Silent — don't show popup for not found
+                SalesOrderEntry.Focus();
                 return;
             }
 
             if (salesOrder.Status == 1)
             {
-                await DisplayAlert("Already Paid", $"Sales Order {salesOrder.SalesOrderNumber} has already been paid.", "OK");
+                // KEEP this popup — client specifically requested it
+                await DisplayAlert("Bill Already Completed",
+                    $"Sales Order {salesOrder.SalesOrderNumber} has already been billed and completed.", "OK");
+                SalesOrderEntry.Focus();
                 return;
             }
 
             if (salesOrder.Status == 2)
             {
                 await DisplayAlert("Cancelled", $"Sales Order {salesOrder.SalesOrderNumber} was cancelled.", "OK");
+                SalesOrderEntry.Focus();
                 return;
             }
 
@@ -280,48 +311,26 @@ namespace RoyalBakeryCashier.Pages
                 var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
                 if (menuItem == null) continue;
 
-                if (item.Quantity > menuItem.AvailableStock)
-                {
-                    await DisplayAlert("Stock Warning",
-                        $"{menuItem.Name}: ordered {item.Quantity} but only {menuItem.AvailableStock} in stock. Adding available amount.",
-                        "OK");
-                    int available = menuItem.AvailableStock;
-                    if (available <= 0) continue;
+                int qtyToAdd = item.Quantity;
+                if (qtyToAdd > menuItem.AvailableStock)
+                    qtyToAdd = menuItem.AvailableStock; // silently cap to available
+                if (qtyToAdd <= 0) continue;
 
-                    _cartItems.Add(new CartItem
-                    {
-                        MenuItemId = item.MenuItemId,
-                        Name = menuItem.Name,
-                        Quantity = available,
-                        Price = item.PricePerItem,
-                        Total = available * item.PricePerItem
-                    });
-                    menuItem.AvailableStock = 0;
-                }
-                else
+                _cartItems.Add(new CartItem
                 {
-                    _cartItems.Add(new CartItem
-                    {
-                        MenuItemId = item.MenuItemId,
-                        Name = menuItem.Name,
-                        Quantity = item.Quantity,
-                        Price = item.PricePerItem,
-                        Total = item.TotalPrice
-                    });
-                    menuItem.AvailableStock -= item.Quantity;
-                }
+                    MenuItemId = item.MenuItemId,
+                    Name = menuItem.Name,
+                    Quantity = qtyToAdd,
+                    Price = item.PricePerItem,
+                    Total = qtyToAdd * item.PricePerItem
+                });
+                menuItem.AvailableStock -= qtyToAdd;
             }
 
-            _loadedSalesOrderId = salesOrder.Id; // Track for completion after payment
-            SalesOrderEntry.Text = string.Empty;
+            _loadedSalesOrderId = salesOrder.Id;
             UpdateTotal();
             RefreshCart();
-
-            string info = salesOrder.CustomerName != null
-                ? $"Loaded {salesOrder.SalesOrderNumber} ({salesOrder.CustomerName}) — {_cartItems.Count} items"
-                : $"Loaded {salesOrder.SalesOrderNumber} — {_cartItems.Count} items";
-            await DisplayAlert("Sales Order Loaded", info, "OK");
-            SalesOrderEntry.Focus();
+            SalesOrderEntry.Focus(); // Keep focus on scanner entry
         }
 
         private void LoadItems()
@@ -417,30 +426,18 @@ namespace RoyalBakeryCashier.Pages
             int inCart = existing?.Quantity ?? 0;
             int available = menuItem.AvailableStock;
 
-            if (available <= 0)
-            {
-                DisplayAlert("Insufficient Stock",
-                    $"\"{menuItem.Name}\"\n\nNo stock available.\nAvailable: 0\nIn cart: {inCart}", "OK");
+            // Silent stock checks — no popups
+            if (available <= 0) return;
+            if (qty > available) qty = available; // silently cap
+            if (existing != null && inCart + qty > available + inCart)
                 return;
-            }
-
-            if (qty > available)
-            {
-                DisplayAlert("Insufficient Stock",
-                    $"\"{menuItem.Name}\"\n\nRequested: {qty}\nAvailable: {available}\nIn cart: {inCart}\n\nItem not added.", "OK");
-                return;
-            }
 
             if (existing != null)
             {
-                if (inCart + qty > available)
-                {
-                    DisplayAlert("Insufficient Stock",
-                        $"\"{menuItem.Name}\"\n\nRequested: {qty} more\nAvailable: {available}\nAlready in cart: {inCart}\n\nCannot add more.", "OK");
-                    return;
-                }
-                existing.Quantity += qty;
+                int canAdd = Math.Min(qty, available);
+                existing.Quantity += canAdd;
                 existing.Total = existing.Quantity * existing.Price;
+                menuItem.AvailableStock -= canAdd;
             }
             else
             {
@@ -452,9 +449,8 @@ namespace RoyalBakeryCashier.Pages
                     Price = menuItem.Price,
                     Total = qty * menuItem.Price
                 });
+                menuItem.AvailableStock -= qty;
             }
-
-            menuItem.AvailableStock -= qty;
 
             UpdateTotal();
             RefreshCart();
@@ -485,11 +481,7 @@ namespace RoyalBakeryCashier.Pages
 
         private async void PlaceOrder_Clicked(object sender, EventArgs e)
         {
-            if (!_cartItems.Any())
-            {
-                await DisplayAlert("Info", "Cart is empty!", "OK");
-                return;
-            }
+            if (!_cartItems.Any()) return; // silent — no popup for empty cart
 
             try
             {
@@ -575,11 +567,7 @@ namespace RoyalBakeryCashier.Pages
                     item.Total = item.Quantity * item.Price;
                     menuItem.AvailableStock--;
                 }
-                else
-                {
-                    DisplayAlert("Insufficient Stock",
-                        $"\"{item.Name}\"\n\nNo more stock available.\nIn cart: {item.Quantity}", "OK");
-                }
+                // No popup — silent when out of stock
 
                 UpdateTotal();
                 RefreshCart();

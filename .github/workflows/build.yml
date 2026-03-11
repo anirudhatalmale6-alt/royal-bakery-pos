@@ -46,29 +46,31 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.15.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.15.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.15.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.16.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.16.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.16.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.15
-          name: v1.15 - Connection Retry + Better Errors
+          tag_name: v1.16
+          name: v1.16 - QR Auto-Load + Popup Cleanup + Speed
           body: |
-            ## Changes in v1.15
-            - **FIX**: Added EnableRetryOnFailure to SQL Server connection — auto-retries on transient network failures
-            - **FIX**: Login error now shows the actual underlying cause instead of generic EF Core wrapper message
-            - Includes all previous fixes (Salesman permission, seed data, bakery menu items)
+            ## Changes in v1.16
+            - **QR Scanner**: Auto-loads order on scan (no need to click Load), focus stays on scan field, clears previous QR
+            - **Load Button**: Made bigger (52px height, 180px width, 18px font)
+            - **Popups Removed**: All unnecessary popups removed (stock, empty cart, printer errors) — only "Bill Already Completed" and "Success" messages remain
+            - **Speed**: Silent stock checks, no popup delays on add-to-cart
+            - Includes all previous fixes
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.15.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.15.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.15.zip** — API server
+            - **RoyalBakeryCashier-v1.16.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.16.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.16.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.15.zip
-            RoyalBakerySalesman-v1.15.zip
-            RoyalBakeryAPI-v1.15.zip
+            RoyalBakeryCashier-v1.16.zip
+            RoyalBakerySalesman-v1.16.zip
+            RoyalBakeryAPI-v1.16.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

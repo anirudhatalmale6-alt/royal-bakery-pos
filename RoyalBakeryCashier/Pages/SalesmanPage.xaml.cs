@@ -200,33 +200,18 @@ public partial class SalesmanPage : ContentPage
         if (qty <= 0) return;
 
         var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);
-        int inCart = existing?.Quantity ?? 0;
         int available = menuItem.AvailableStock;
 
-        if (available <= 0)
-        {
-            DisplayAlert("Insufficient Stock",
-                $"\"{menuItem.Name}\"\n\nNo stock available.\nAvailable: 0\nIn cart: {inCart}", "OK");
-            return;
-        }
-
-        if (qty > available)
-        {
-            DisplayAlert("Insufficient Stock",
-                $"\"{menuItem.Name}\"\n\nRequested: {qty}\nAvailable: {available}\nIn cart: {inCart}\n\nItem not added.", "OK");
-            return;
-        }
+        // Silent stock checks — no popups
+        if (available <= 0) return;
+        if (qty > available) qty = available;
 
         if (existing != null)
         {
-            if (inCart + qty > available)
-            {
-                DisplayAlert("Insufficient Stock",
-                    $"\"{menuItem.Name}\"\n\nRequested: {qty} more\nAvailable: {available}\nAlready in cart: {inCart}\n\nCannot add more.", "OK");
-                return;
-            }
-            existing.Quantity += qty;
+            int canAdd = Math.Min(qty, available);
+            existing.Quantity += canAdd;
             existing.Total = existing.Quantity * existing.Price;
+            menuItem.AvailableStock -= canAdd;
         }
         else
         {
@@ -238,9 +223,9 @@ public partial class SalesmanPage : ContentPage
                 Price = menuItem.Price,
                 Total = qty * menuItem.Price
             });
+            menuItem.AvailableStock -= qty;
         }
 
-        menuItem.AvailableStock -= qty;
         UpdateTotal();
         RefreshCart();
     }
@@ -291,11 +276,7 @@ public partial class SalesmanPage : ContentPage
                 item.Total = item.Quantity * item.Price;
                 menuItem.AvailableStock--;
             }
-            else
-            {
-                DisplayAlert("Insufficient Stock",
-                    $"\"{item.Name}\"\n\nNo more stock available.\nIn cart: {item.Quantity}", "OK");
-            }
+            // No popup — silent when out of stock
             UpdateTotal();
             RefreshCart();
         }
@@ -325,11 +306,7 @@ public partial class SalesmanPage : ContentPage
     // ===== CREATE SALES ORDER =====
     private async void CreateOrder_Clicked(object sender, EventArgs e)
     {
-        if (!_cartItems.Any())
-        {
-            await DisplayAlert("Info", "Add items to create an order.", "OK");
-            return;
-        }
+        if (!_cartItems.Any()) return; // silent — no popup for empty cart
 
         // Generate sales order number
         var lastOrder = _dbContext.SalesOrders.OrderByDescending(so => so.Id).FirstOrDefault();
@@ -402,11 +379,12 @@ public partial class SalesmanPage : ContentPage
 
             if (string.IsNullOrEmpty(printerName))
             {
-                var printers = RawPrinterHelper.GetInstalledPrinters();
-                string msg = printers.Count > 0
-                    ? $"No thermal printer detected.\n\nInstalled printers:\n{string.Join("\n", printers)}"
-                    : "No printers found. Please install the Epson TM-T82 driver.";
-                await DisplayAlert("Printer Not Found", msg, "OK");
+                // Printer not found — silent (popup commented out as requested)
+                // var printers = RawPrinterHelper.GetInstalledPrinters();
+                // string msg = printers.Count > 0
+                //     ? $"No thermal printer detected.\n\nInstalled printers:\n{string.Join("\n", printers)}"
+                //     : "No printers found. Please install the Epson TM-T82 driver.";
+                // await DisplayAlert("Printer Not Found", msg, "OK");
                 return;
             }
 
@@ -465,17 +443,10 @@ public partial class SalesmanPage : ContentPage
 
             Emit(feedCut);
 
-            bool printed = RawPrinterHelper.SendBytesToPrinter(printerName, ms.ToArray());
-            if (!printed)
-            {
-                await DisplayAlert("Print Error",
-                    $"Failed to send data to printer: {printerName}\nPlease check the printer is on and connected.", "OK");
-            }
+            // Send raw bytes — silent on failure (popup commented out as requested)
+            RawPrinterHelper.SendBytesToPrinter(printerName, ms.ToArray());
         }
-        catch (Exception ex)
-        {
-            await DisplayAlert("Print Error", $"Could not print: {ex.Message}", "OK");
-        }
+        catch { /* silent print error */ }
     }
 
     /// <summary>

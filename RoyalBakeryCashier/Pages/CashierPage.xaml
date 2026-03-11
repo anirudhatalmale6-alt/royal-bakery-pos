@@ -23,29 +23,31 @@
                        TextColor="{StaticResource Gray300}"/>
             </VerticalStackLayout>
             <HorizontalStackLayout HorizontalOptions="End" Spacing="8">
-                <!-- Sales Order Search -->
+                <!-- Sales Order Search — scanner auto-loads -->
                 <Frame BackgroundColor="{StaticResource InputBg}"
                        Padding="0" CornerRadius="8"
                        BorderColor="{StaticResource Gray600}"
-                       HeightRequest="38">
+                       HeightRequest="48">
                     <Entry x:Name="SalesOrderEntry"
                            Placeholder="Scan / Enter Order ID..."
                            PlaceholderColor="{StaticResource Gray400}"
                            TextColor="White"
-                           FontSize="13"
-                           WidthRequest="180"
-                           HeightRequest="38"
+                           FontSize="15"
+                           FontAttributes="Bold"
+                           WidthRequest="220"
+                           HeightRequest="48"
                            Margin="10,0"
                            BackgroundColor="Transparent"
-                           Completed="SalesOrderEntry_Completed"/>
+                           Completed="SalesOrderEntry_Completed"
+                           TextChanged="SalesOrderEntry_TextChanged"/>
                 </Frame>
                 <Button Text="LOAD ORDER"
-                        FontSize="16"
+                        FontSize="18"
                         FontAttributes="Bold"
-                        HeightRequest="42"
-                        WidthRequest="140"
-                        Padding="16,0"
-                        CornerRadius="8"
+                        HeightRequest="52"
+                        WidthRequest="180"
+                        Padding="20,0"
+                        CornerRadius="10"
                         BackgroundColor="{StaticResource CatDrinks}"
                         TextColor="White"
                         Clicked="LoadSalesOrder_Clicked"/>
