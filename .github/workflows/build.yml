@@ -46,31 +46,30 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.17.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.17.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.17.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.18.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.18.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.18.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.17
-          name: v1.17 - Salesman + Cashier Speed Optimization
+          tag_name: v1.18
+          name: v1.18 - Fix Payment Transaction Error
           body: |
-            ## Changes in v1.17
-            - **PERFORMANCE FIX**: Eliminated RefreshCart() which was recreating the entire cart CollectionView on every single add/remove/increase/decrease — this was the root cause of 2-5 second delays
-            - Cart now uses ObservableCollection properly: Add/Remove auto-notify UI, in-place updates use index replacement
-            - Both Cashier and Salesman terminals optimized
-            - QR Scanner auto-load, bigger Load button, popup cleanup from v1.16 included
-            - Includes all previous fixes
+            ## Changes in v1.18
+            - **CRITICAL FIX**: Payment "SqlServerRetryingExecutionStrategy does not support user-initiated transactions" error
+            - Wrapped BeginTransactionAsync inside CreateExecutionStrategy().ExecuteAsync() — required when EnableRetryOnFailure is configured
+            - Print receipt moved outside transaction for reliability
+            - Includes all v1.17 performance optimizations
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.17.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.17.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.17.zip** — API server
+            - **RoyalBakeryCashier-v1.18.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.18.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.18.zip** — API server
           files: |
-            RoyalBakeryCashier-v1.17.zip
-            RoyalBakerySalesman-v1.17.zip
-            RoyalBakeryAPI-v1.17.zip
+            RoyalBakeryCashier-v1.18.zip
+            RoyalBakerySalesman-v1.18.zip
+            RoyalBakeryAPI-v1.18.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -170,66 +170,73 @@ public partial class PaymentPage : ContentPage
         decimal change = (cash + card) - _total;
         if (change < 0) change = 0;
 
-        using var tx = await _db.Database.BeginTransactionAsync();
+        Sale sale = null;
+
+        // Use execution strategy to wrap the transaction (required with EnableRetryOnFailure)
+        var strategy = _db.Database.CreateExecutionStrategy();
         try
         {
-            // 1. Deduct stock and GRN
-            DeductStock(_order);
-            DeductGRNForOrder(_order);
-
-            // 2. Create Sale record in Sales table
-            var sale = new Sale
+            await strategy.ExecuteAsync(async () =>
             {
-                DateTime = DateTime.Now,
-                TotalAmount = _total,
-                CashAmount = cash,
-                CardAmount = card,
-                ChangeGiven = change,
-                InvoiceNumber = $"INV-{_order.Id:D5}",
-                CashierName = string.IsNullOrEmpty(App.LoggedInUserName) ? "Cashier" : App.LoggedInUserName,
-                Items = _order.Items.Select(i => new SaleItem
+                using var tx = await _db.Database.BeginTransactionAsync();
+
+                // 1. Deduct stock and GRN
+                DeductStock(_order);
+                DeductGRNForOrder(_order);
+
+                // 2. Create Sale record in Sales table
+                sale = new Sale
                 {
-                    MenuItemId = i.MenuItemId,
-                    ItemName = i.MenuItem?.Name ?? "Unknown",
-                    Quantity = i.Quantity,
-                    PricePerItem = i.PricePerItem,
-                    TotalPrice = i.TotalPrice
-                }).ToList()
-            };
-            _db.Sales.Add(sale);
+                    DateTime = DateTime.Now,
+                    TotalAmount = _total,
+                    CashAmount = cash,
+                    CardAmount = card,
+                    ChangeGiven = change,
+                    InvoiceNumber = $"INV-{_order.Id:D5}",
+                    CashierName = string.IsNullOrEmpty(App.LoggedInUserName) ? "Cashier" : App.LoggedInUserName,
+                    Items = _order.Items.Select(i => new SaleItem
+                    {
+                        MenuItemId = i.MenuItemId,
+                        ItemName = i.MenuItem?.Name ?? "Unknown",
+                        Quantity = i.Quantity,
+                        PricePerItem = i.PricePerItem,
+                        TotalPrice = i.TotalPrice
+                    }).ToList()
+                };
+                _db.Sales.Add(sale);
 
-            // 3. Mark SalesOrder as paid (if loaded from QR scan)
-            if (_salesOrderId.HasValue)
-            {
-                var salesOrder = _db.SalesOrders.Find(_salesOrderId.Value);
-                if (salesOrder != null)
-                    salesOrder.Status = 1; // Paid — QR won't work again
-            }
+                // 3. Mark SalesOrder as paid (if loaded from QR scan)
+                if (_salesOrderId.HasValue)
+                {
+                    var salesOrder = _db.SalesOrders.Find(_salesOrderId.Value);
+                    if (salesOrder != null)
+                        salesOrder.Status = 1; // Paid — QR won't work again
+                }
 
-            // 4. Clear order data (order + items + payments)
-            var payments = _db.OrderPayments.Where(p => p.OrderId == _order.Id);
-            _db.OrderPayments.RemoveRange(payments);
-            _db.OrderItems.RemoveRange(_order.Items);
-            _db.Orders.Remove(_order);
+                // 4. Clear order data (order + items + payments)
+                var payments = _db.OrderPayments.Where(p => p.OrderId == _order.Id);
+                _db.OrderPayments.RemoveRange(payments);
+                _db.OrderItems.RemoveRange(_order.Items);
+                _db.Orders.Remove(_order);
 
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+            });
 
-            // 4. Print receipt directly to thermal printer
-            await PrintToThermal(sale, cash, card, change);
+            // Print receipt (outside transaction)
+            if (sale != null)
+                await PrintToThermal(sale, cash, card, change);
 
             // Close payment popup, go back to cashier
             await Navigation.PopModalAsync();
         }
         catch (DbUpdateException dbEx)
         {
-            await tx.RollbackAsync();
             string innerMsg = dbEx.InnerException != null ? dbEx.InnerException.Message : "No inner details";
             await DisplayAlert("Database Error", $"Message: {dbEx.Message}\nInner: {innerMsg}", "OK");
         }
         catch (Exception ex)
         {
-            await tx.RollbackAsync();
             await DisplayAlert("Error", ex.Message, "OK");
         }
     }
