@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RoyalBakeryAdmin.Pages.DashboardPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             BackgroundColor="#F0F2F5">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="30" Spacing="20">
+
+            <Label Text="Dashboard"
+                   FontSize="32"
+                   FontAttributes="Bold"
+                   TextColor="#1A237E"/>
+
+            <Label x:Name="DateLabel"
+                   FontSize="14"
+                   TextColor="#757575"/>
+
+            <!-- Summary Cards Row -->
+            <FlexLayout Wrap="Wrap" JustifyContent="Start" Direction="Row">
+
+                <!-- Today's Sales -->
+                <Frame BackgroundColor="White" Padding="20" Margin="8"
+                       CornerRadius="12" HasShadow="True"
+                       WidthRequest="220" HeightRequest="120">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Today's Sales" FontSize="13" TextColor="#757575"/>
+                        <Label x:Name="TodaySalesLabel" Text="Rs. 0.00"
+                               FontSize="24" FontAttributes="Bold" TextColor="#4CAF50"/>
+                        <Label x:Name="TodaySalesCountLabel" Text="0 invoices"
+                               FontSize="12" TextColor="#9E9E9E"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Total Products -->
+                <Frame BackgroundColor="White" Padding="20" Margin="8"
+                       CornerRadius="12" HasShadow="True"
+                       WidthRequest="220" HeightRequest="120">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Total Products" FontSize="13" TextColor="#757575"/>
+                        <Label x:Name="TotalProductsLabel" Text="0"
+                               FontSize="24" FontAttributes="Bold" TextColor="#1A237E"/>
+                        <Label x:Name="TotalCategoriesLabel" Text="0 categories"
+                               FontSize="12" TextColor="#9E9E9E"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Stock Items -->
+                <Frame BackgroundColor="White" Padding="20" Margin="8"
+                       CornerRadius="12" HasShadow="True"
+                       WidthRequest="220" HeightRequest="120">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Stock Items" FontSize="13" TextColor="#757575"/>
+                        <Label x:Name="StockItemsLabel" Text="0"
+                               FontSize="24" FontAttributes="Bold" TextColor="#FF9800"/>
+                        <Label x:Name="LowStockLabel" Text="0 low stock"
+                               FontSize="12" TextColor="#EF5350"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Today's GRN -->
+                <Frame BackgroundColor="White" Padding="20" Margin="8"
+                       CornerRadius="12" HasShadow="True"
+                       WidthRequest="220" HeightRequest="120">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Today's GRN" FontSize="13" TextColor="#757575"/>
+                        <Label x:Name="TodayGRNLabel" Text="0"
+                               FontSize="24" FontAttributes="Bold" TextColor="#2196F3"/>
+                        <Label x:Name="TodayGRNItemsLabel" Text="0 items received"
+                               FontSize="12" TextColor="#9E9E9E"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Today's Clearance -->
+                <Frame BackgroundColor="White" Padding="20" Margin="8"
+                       CornerRadius="12" HasShadow="True"
+                       WidthRequest="220" HeightRequest="120">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Today's Clearance" FontSize="13" TextColor="#757575"/>
+                        <Label x:Name="TodayClearanceLabel" Text="0"
+                               FontSize="24" FontAttributes="Bold" TextColor="#EF5350"/>
+                        <Label x:Name="TodayClearanceQtyLabel" Text="0 items cleared"
+                               FontSize="12" TextColor="#9E9E9E"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+            </FlexLayout>
+
+            <!-- Top Selling Items Today -->
+            <Frame BackgroundColor="White" Padding="20" CornerRadius="12" HasShadow="True">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Top Selling Items Today"
+                           FontSize="18" FontAttributes="Bold" TextColor="#1A237E"/>
+                    <CollectionView x:Name="TopItemsView" HeightRequest="300">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,Auto,Auto" Padding="8,6" ColumnSpacing="15">
+                                    <Label Text="{Binding Name}" VerticalOptions="Center"
+                                           FontSize="14" TextColor="#212121"/>
+                                    <Label Grid.Column="1" Text="{Binding Qty, StringFormat='{0} sold'}"
+                                           VerticalOptions="Center" FontSize="13" TextColor="#757575"/>
+                                    <Label Grid.Column="2" Text="{Binding Total, StringFormat='Rs. {0:N2}'}"
+                                           VerticalOptions="Center" FontSize="13"
+                                           FontAttributes="Bold" TextColor="#4CAF50"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -30,6 +30,9 @@ jobs:
       - name: Restore API
         run: dotnet restore RoyalBakeryAPI/RoyalBakeryAPI.csproj
 
+      - name: Restore Admin
+        run: dotnet restore RoyalBakeryAdmin/RoyalBakeryAdmin.csproj
+
       - name: Publish Cashier EXE
         run: dotnet publish RoyalBakeryCashier/RoyalBakeryCashierTerminal.csproj -c Release -f net9.0-windows10.0.19041.0 -o publish/cashier --self-contained -r win-x64
 
@@ -39,37 +42,58 @@ jobs:
       - name: Publish API
         run: dotnet publish RoyalBakeryAPI/RoyalBakeryAPI.csproj -c Release -o publish/api --self-contained -r win-x64
 
+      - name: Publish Admin EXE
+        run: dotnet publish RoyalBakeryAdmin/RoyalBakeryAdmin.csproj -c Release -f net9.0-windows10.0.19041.0 -o publish/admin --self-contained -r win-x64
+
       - name: Copy sample configs
         run: |
           Copy-Item RoyalBakeryCashier/terminal.config.cashier.sample publish/cashier/terminal.config.sample
           Copy-Item RoyalBakeryCashier/terminal.config.salesman.sample publish/salesman/terminal.config.sample
+          Copy-Item RoyalBakeryCashier/terminal.config.cashier.sample publish/admin/terminal.config.sample
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.18.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.18.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.18.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.19.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.19.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.19.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.19.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.18
-          name: v1.18 - Fix Payment Transaction Error
+          tag_name: v1.19
+          name: v1.19 - Cart Fix + Admin Panel + GRN Responsive
           body: |
-            ## Changes in v1.18
-            - **CRITICAL FIX**: Payment "SqlServerRetryingExecutionStrategy does not support user-initiated transactions" error
-            - Wrapped BeginTransactionAsync inside CreateExecutionStrategy().ExecuteAsync() — required when EnableRetryOnFailure is configured
-            - Print receipt moved outside transaction for reliability
-            - Includes all v1.17 performance optimizations
+            ## Changes in v1.19
+
+            ### Bug Fixes
+            - **FIXED**: Cart quantity display now updates correctly when using +/- buttons (was stuck at 1)
+            - **FIXED**: Salesman order save wrapped with execution strategy for SQL retry compatibility
+            - **OPTIMIZED**: Salesman print no longer does per-item DB queries (uses cart data)
+
+            ### New: Admin Panel (.NET MAUI Windows)
+            - Dashboard with today's sales, products, stock, GRN, clearance summary
+            - **Product Management**: Add, edit, delete products with category assignment and quick category
+            - **Category Management**: Add, edit, delete categories with product count display
+            - **Sales Report**: Date-range filter, revenue/invoice/cash/card summary, full sales table
+            - **GRN Report**: Date-range filter, GRN count/items/quantity summary, detailed GRN list
+            - **Clearance Report**: Date-range filter, clearance count/quantity, detailed clearance table
+            - Uses same terminal.config for database connection
+
+            ### GRN App
+            - Improved responsive layouts (larger CollectionViews for tablet)
+            - Dashboard cards now use FlexLayout for better wrapping
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.18.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.18.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.18.zip** — API server
+            - **RoyalBakeryCashier-v1.19.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.19.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.19.zip** — API server
+            - **RoyalBakeryAdmin-v1.19.zip** — Admin Panel EXE (NEW)
           files: |
-            RoyalBakeryCashier-v1.18.zip
-            RoyalBakerySalesman-v1.18.zip
-            RoyalBakeryAPI-v1.18.zip
+            RoyalBakeryCashier-v1.19.zip
+            RoyalBakerySalesman-v1.19.zip
+            RoyalBakeryAPI-v1.19.zip
+            RoyalBakeryAdmin-v1.19.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -90,3 +114,9 @@ jobs:
         with:
           name: RoyalBakeryAPI-Windows
           path: publish/api/
+
+      - name: Upload Admin EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: RoyalBakeryAdmin-Windows
+          path: publish/admin/

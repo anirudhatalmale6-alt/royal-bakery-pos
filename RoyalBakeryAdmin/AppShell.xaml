@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell x:Class="RoyalBakeryAdmin.AppShell"
+       xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:RoyalBakeryAdmin.Pages"
+       FlyoutBehavior="Locked"
+       FlyoutWidth="240"
+       FlyoutBackgroundColor="#1A237E">
+
+    <Shell.FlyoutHeader>
+        <VerticalStackLayout Padding="20,30,20,20" Spacing="5">
+            <Label Text="Royal Bakery"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   TextColor="White"
+                   HorizontalOptions="Center"/>
+            <Label Text="Admin Panel"
+                   FontSize="14"
+                   TextColor="#B0BEC5"
+                   HorizontalOptions="Center"/>
+            <BoxView HeightRequest="1" Color="#3949AB" Margin="0,10,0,0"/>
+        </VerticalStackLayout>
+    </Shell.FlyoutHeader>
+
+    <Shell.ItemTemplate>
+        <DataTemplate>
+            <Grid ColumnDefinitions="Auto,*" Padding="20,14" ColumnSpacing="14">
+                <Image Source="{Binding FlyoutIcon}"
+                       HeightRequest="22" WidthRequest="22"
+                       VerticalOptions="Center"/>
+                <Label Grid.Column="1"
+                       Text="{Binding Title}"
+                       TextColor="White"
+                       FontSize="15"
+                       VerticalOptions="Center"/>
+            </Grid>
+        </DataTemplate>
+    </Shell.ItemTemplate>
+
+    <FlyoutItem Title="Dashboard">
+        <ShellContent ContentTemplate="{DataTemplate pages:DashboardPage}"/>
+    </FlyoutItem>
+
+    <FlyoutItem Title="Products">
+        <ShellContent ContentTemplate="{DataTemplate pages:ProductsPage}"/>
+    </FlyoutItem>
+
+    <FlyoutItem Title="Categories">
+        <ShellContent ContentTemplate="{DataTemplate pages:CategoriesPage}"/>
+    </FlyoutItem>
+
+    <FlyoutItem Title="Sales Report">
+        <ShellContent ContentTemplate="{DataTemplate pages:SalesReportPage}"/>
+    </FlyoutItem>
+
+    <FlyoutItem Title="GRN Report">
+        <ShellContent ContentTemplate="{DataTemplate pages:GRNReportPage}"/>
+    </FlyoutItem>
+
+    <FlyoutItem Title="Clearance Report">
+        <ShellContent ContentTemplate="{DataTemplate pages:ClearanceReportPage}"/>
+    </FlyoutItem>
+
+</Shell>

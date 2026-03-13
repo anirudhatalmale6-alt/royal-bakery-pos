@@ -207,12 +207,17 @@ public partial class SalesmanPage : ContentPage
         if (existing != null)
         {
             int canAdd = Math.Min(qty, available);
-            existing.Quantity += canAdd;
-            existing.Total = existing.Quantity * existing.Price;
+            int newQty = existing.Quantity + canAdd;
             menuItem.AvailableStock -= canAdd;
-            // In-place update: remove and re-insert at same index to notify UI
             int idx = _cartItems.IndexOf(existing);
-            _cartItems[idx] = existing;
+            _cartItems[idx] = new CartItem
+            {
+                MenuItemId = existing.MenuItemId,
+                Name = existing.Name,
+                Quantity = newQty,
+                Price = existing.Price,
+                Total = newQty * existing.Price
+            };
         }
         else
         {
@@ -253,16 +258,23 @@ public partial class SalesmanPage : ContentPage
             var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
             if (menuItem != null) menuItem.AvailableStock++;
 
-            item.Quantity--;
-            if (item.Quantity <= 0)
+            int newQty = item.Quantity - 1;
+            if (newQty <= 0)
             {
                 _cartItems.Remove(item);
             }
             else
             {
-                item.Total = item.Quantity * item.Price;
                 int idx = _cartItems.IndexOf(item);
-                if (idx >= 0) _cartItems[idx] = item; // notify UI
+                if (idx >= 0)
+                    _cartItems[idx] = new CartItem
+                    {
+                        MenuItemId = item.MenuItemId,
+                        Name = item.Name,
+                        Quantity = newQty,
+                        Price = item.Price,
+                        Total = newQty * item.Price
+                    };
             }
 
             UpdateTotal();
@@ -276,11 +288,18 @@ public partial class SalesmanPage : ContentPage
             var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
             if (menuItem != null && menuItem.AvailableStock > 0)
             {
-                item.Quantity++;
-                item.Total = item.Quantity * item.Price;
+                int newQty = item.Quantity + 1;
                 menuItem.AvailableStock--;
                 int idx = _cartItems.IndexOf(item);
-                if (idx >= 0) _cartItems[idx] = item; // notify UI
+                if (idx >= 0)
+                    _cartItems[idx] = new CartItem
+                    {
+                        MenuItemId = item.MenuItemId,
+                        Name = item.Name,
+                        Quantity = newQty,
+                        Price = item.Price,
+                        Total = newQty * item.Price
+                    };
             }
             UpdateTotal();
         }
@@ -334,11 +353,18 @@ public partial class SalesmanPage : ContentPage
             }).ToList()
         };
 
-        _dbContext.SalesOrders.Add(salesOrder);
-        await _dbContext.SaveChangesAsync();
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            _dbContext.SalesOrders.Add(salesOrder);
+            await _dbContext.SaveChangesAsync();
+        });
+
+        // Build item name lookup from cart (avoids per-item DB queries during print)
+        var itemNames = _cartItems.ToDictionary(c => c.MenuItemId, c => c.Name);
 
         // Print sales order slip with QR code
-        await PrintOrderSlip(salesOrder);
+        await PrintOrderSlip(salesOrder, itemNames);
 
         await DisplayAlert("Order Created",
             $"{orderNumber} created — {_cartItems.Count} items, Rs. {salesOrder.TotalAmount:N2}\n\nGive the printed slip to the customer for payment at the cashier.",
@@ -350,7 +376,7 @@ public partial class SalesmanPage : ContentPage
         UpdateTotal();
     }
 
-    private async Task PrintOrderSlip(SalesOrder order)
+    private async Task PrintOrderSlip(SalesOrder order, Dictionary<int, string> itemNames = null)
     {
         const int W = 48;
         string Separator(char c = '-') => new string(c, W);
@@ -421,8 +447,7 @@ public partial class SalesmanPage : ContentPage
 
             foreach (var item in order.Items)
             {
-                var menuItem = _dbContext.MenuItems.Find(item.MenuItemId);
-                string itemName = menuItem?.Name ?? "Unknown";
+                string itemName = (itemNames != null && itemNames.TryGetValue(item.MenuItemId, out var n)) ? n : "Item";
                 Emit(enc.GetBytes(itemName + "\n"));
                 Emit(enc.GetBytes(Row($" {item.Quantity} x {item.PricePerItem:N2}", $"{item.TotalPrice:N2}") + "\n"));
             }

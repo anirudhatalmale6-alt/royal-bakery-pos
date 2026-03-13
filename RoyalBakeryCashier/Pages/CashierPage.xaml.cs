@@ -428,11 +428,17 @@ namespace RoyalBakeryCashier.Pages
             if (existing != null)
             {
                 int canAdd = Math.Min(qty, available);
-                existing.Quantity += canAdd;
-                existing.Total = existing.Quantity * existing.Price;
+                int newQty = existing.Quantity + canAdd;
                 menuItem.AvailableStock -= canAdd;
                 int idx = _cartItems.IndexOf(existing);
-                _cartItems[idx] = existing; // notify UI without full re-render
+                _cartItems[idx] = new CartItem
+                {
+                    MenuItemId = existing.MenuItemId,
+                    Name = existing.Name,
+                    Quantity = newQty,
+                    Price = existing.Price,
+                    Total = newQty * existing.Price
+                };
             }
             else
             {
@@ -534,16 +540,23 @@ namespace RoyalBakeryCashier.Pages
                 var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
                 if (menuItem != null) menuItem.AvailableStock++;
 
-                item.Quantity--;
-                if (item.Quantity <= 0)
+                int newQty = item.Quantity - 1;
+                if (newQty <= 0)
                 {
                     _cartItems.Remove(item);
                 }
                 else
                 {
-                    item.Total = item.Quantity * item.Price;
                     int idx = _cartItems.IndexOf(item);
-                    if (idx >= 0) _cartItems[idx] = item; // notify UI
+                    if (idx >= 0)
+                        _cartItems[idx] = new CartItem
+                        {
+                            MenuItemId = item.MenuItemId,
+                            Name = item.Name,
+                            Quantity = newQty,
+                            Price = item.Price,
+                            Total = newQty * item.Price
+                        };
                 }
 
                 UpdateTotal();
@@ -557,11 +570,18 @@ namespace RoyalBakeryCashier.Pages
                 var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
                 if (menuItem != null && menuItem.AvailableStock > 0)
                 {
-                    item.Quantity++;
-                    item.Total = item.Quantity * item.Price;
+                    int newQty = item.Quantity + 1;
                     menuItem.AvailableStock--;
                     int idx = _cartItems.IndexOf(item);
-                    if (idx >= 0) _cartItems[idx] = item; // notify UI
+                    if (idx >= 0)
+                        _cartItems[idx] = new CartItem
+                        {
+                            MenuItemId = item.MenuItemId,
+                            Name = item.Name,
+                            Quantity = newQty,
+                            Price = item.Price,
+                            Total = newQty * item.Price
+                        };
                 }
 
                 UpdateTotal();

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RoyalBakeryAdmin.Pages.GRNReportPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             BackgroundColor="#F0F2F5">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="30" RowSpacing="15">
+
+        <Label Text="GRN Report"
+               FontSize="28" FontAttributes="Bold" TextColor="#1A237E"/>
+
+        <!-- Date Filters -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="10">
+            <Label Text="From:" VerticalOptions="Center"/>
+            <DatePicker x:Name="FromDate" Grid.Column="1"/>
+            <Label Grid.Column="2" Text="To:" VerticalOptions="Center"/>
+            <DatePicker x:Name="ToDate" Grid.Column="3"/>
+            <Button Grid.Column="4" Text="Generate"
+                    BackgroundColor="#1A237E" TextColor="White"
+                    CornerRadius="8" HorizontalOptions="Start"
+                    Clicked="Generate_Clicked"/>
+        </Grid>
+
+        <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="15">
+
+            <!-- Summary -->
+            <FlexLayout Wrap="Wrap" JustifyContent="Start" Direction="Row">
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Total GRNs" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="TotalGRNLabel" Text="0" FontSize="20"
+                               FontAttributes="Bold" TextColor="#2196F3"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Total Items" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="TotalItemsLabel" Text="0" FontSize="20"
+                               FontAttributes="Bold" TextColor="#1A237E"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Total Quantity" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="TotalQtyLabel" Text="0" FontSize="20"
+                               FontAttributes="Bold" TextColor="#FF9800"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </FlexLayout>
+
+            <!-- GRN Details -->
+            <Frame Grid.Row="1" BackgroundColor="White" Padding="0" CornerRadius="12" HasShadow="True">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid ColumnDefinitions="80,150,*,100"
+                          Padding="12,8" BackgroundColor="#E8EAF6" ColumnSpacing="8">
+                        <Label Text="GRN #" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="1" Text="Date/Time" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="2" Text="Items" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="3" Text="Total Qty" FontAttributes="Bold" TextColor="#1A237E" FontSize="12" HorizontalTextAlignment="End"/>
+                    </Grid>
+                    <CollectionView x:Name="GRNView" Grid.Row="1">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="80,150,*,100"
+                                      Padding="12,6" ColumnSpacing="8">
+                                    <Label Text="{Binding GRNNumber}" FontSize="12" TextColor="#212121" VerticalOptions="Center"/>
+                                    <Label Grid.Column="1" Text="{Binding DateStr}" FontSize="12" TextColor="#757575" VerticalOptions="Center"/>
+                                    <Label Grid.Column="2" Text="{Binding ItemsSummary}" FontSize="12" TextColor="#757575" VerticalOptions="Center"
+                                           LineBreakMode="TailTruncation"/>
+                                    <Label Grid.Column="3" Text="{Binding TotalQty}" FontSize="12" HorizontalTextAlignment="End" TextColor="#212121" VerticalOptions="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+            </Frame>
+        </Grid>
+
+    </Grid>
+</ContentPage>

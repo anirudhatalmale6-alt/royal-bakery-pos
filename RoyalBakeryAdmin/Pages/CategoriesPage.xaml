@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RoyalBakeryAdmin.Pages.CategoriesPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             BackgroundColor="#F0F2F5">
+
+    <Grid RowDefinitions="Auto,*" Padding="30" RowSpacing="15">
+
+        <!-- Header -->
+        <Grid ColumnDefinitions="*,Auto">
+            <Label Text="Category Management"
+                   FontSize="28" FontAttributes="Bold" TextColor="#1A237E"
+                   VerticalOptions="Center"/>
+            <Button Grid.Column="1"
+                    Text="+ Add Category"
+                    BackgroundColor="#4CAF50"
+                    TextColor="White"
+                    CornerRadius="8"
+                    Clicked="AddCategory_Clicked"/>
+        </Grid>
+
+        <!-- Categories List -->
+        <Frame Grid.Row="1" BackgroundColor="White" Padding="0" CornerRadius="12" HasShadow="True">
+            <Grid RowDefinitions="Auto,*">
+                <!-- Header -->
+                <Grid ColumnDefinitions="60,2*,Auto,120"
+                      Padding="15,10" BackgroundColor="#E8EAF6" ColumnSpacing="10">
+                    <Label Text="ID" FontAttributes="Bold" TextColor="#1A237E"/>
+                    <Label Grid.Column="1" Text="Category Name" FontAttributes="Bold" TextColor="#1A237E"/>
+                    <Label Grid.Column="2" Text="Products" FontAttributes="Bold" TextColor="#1A237E" HorizontalTextAlignment="Center"/>
+                    <Label Grid.Column="3" Text="Actions" FontAttributes="Bold" TextColor="#1A237E" HorizontalTextAlignment="Center"/>
+                </Grid>
+
+                <CollectionView x:Name="CategoriesView" Grid.Row="1">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="60,2*,Auto,120"
+                                  Padding="15,10" ColumnSpacing="10">
+                                <Label Text="{Binding Id}" VerticalOptions="Center"
+                                       TextColor="#757575" FontSize="13"/>
+                                <Label Grid.Column="1" Text="{Binding Name}" VerticalOptions="Center"
+                                       FontSize="15" TextColor="#212121"/>
+                                <Label Grid.Column="2" Text="{Binding ProductCount}"
+                                       VerticalOptions="Center" FontSize="14"
+                                       HorizontalTextAlignment="Center" TextColor="#757575"/>
+                                <HorizontalStackLayout Grid.Column="3" Spacing="6"
+                                                       HorizontalOptions="Center" VerticalOptions="Center">
+                                    <Button Text="Edit" FontSize="11"
+                                            BackgroundColor="#2196F3" TextColor="White"
+                                            CornerRadius="6" Padding="8,4" HeightRequest="30"
+                                            Clicked="EditCategory_Clicked"/>
+                                    <Button Text="Del" FontSize="11"
+                                            BackgroundColor="#EF5350" TextColor="White"
+                                            CornerRadius="6" Padding="8,4" HeightRequest="30"
+                                            Clicked="DeleteCategory_Clicked"/>
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+        </Frame>
+    </Grid>
+</ContentPage>

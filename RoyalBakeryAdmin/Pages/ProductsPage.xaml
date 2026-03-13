@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RoyalBakeryAdmin.Pages.ProductsPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             BackgroundColor="#F0F2F5">
+
+    <Grid RowDefinitions="Auto,*" Padding="30" RowSpacing="15">
+
+        <!-- Header -->
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+            <Label Text="Product Management"
+                   FontSize="28" FontAttributes="Bold" TextColor="#1A237E"
+                   VerticalOptions="Center"/>
+
+            <Entry x:Name="SearchEntry" Grid.Column="1"
+                   Placeholder="Search products..."
+                   WidthRequest="250"
+                   TextChanged="SearchEntry_TextChanged"/>
+
+            <Button x:Name="AddProductBtn" Grid.Column="2"
+                    Text="+ Add Product"
+                    BackgroundColor="#4CAF50"
+                    TextColor="White"
+                    CornerRadius="8"
+                    Clicked="AddProduct_Clicked"/>
+        </Grid>
+
+        <!-- Products List -->
+        <Frame Grid.Row="1" BackgroundColor="White" Padding="0" CornerRadius="12" HasShadow="True">
+            <Grid RowDefinitions="Auto,*">
+                <!-- Column Headers -->
+                <Grid ColumnDefinitions="60,2*,*,80,80,80,120"
+                      Padding="15,10" BackgroundColor="#E8EAF6" ColumnSpacing="10">
+                    <Label Text="ID" FontAttributes="Bold" TextColor="#1A237E"/>
+                    <Label Grid.Column="1" Text="Product Name" FontAttributes="Bold" TextColor="#1A237E"/>
+                    <Label Grid.Column="2" Text="Category" FontAttributes="Bold" TextColor="#1A237E"/>
+                    <Label Grid.Column="3" Text="Price" FontAttributes="Bold" TextColor="#1A237E" HorizontalTextAlignment="End"/>
+                    <Label Grid.Column="4" Text="Stock" FontAttributes="Bold" TextColor="#1A237E" HorizontalTextAlignment="Center"/>
+                    <Label Grid.Column="5" Text="Quick" FontAttributes="Bold" TextColor="#1A237E" HorizontalTextAlignment="Center"/>
+                    <Label Grid.Column="6" Text="Actions" FontAttributes="Bold" TextColor="#1A237E" HorizontalTextAlignment="Center"/>
+                </Grid>
+
+                <!-- Data Rows -->
+                <CollectionView x:Name="ProductsView" Grid.Row="1">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="60,2*,*,80,80,80,120"
+                                  Padding="15,8" ColumnSpacing="10">
+                                <Label Text="{Binding Id}" VerticalOptions="Center"
+                                       TextColor="#757575" FontSize="13"/>
+                                <Label Grid.Column="1" Text="{Binding Name}" VerticalOptions="Center"
+                                       FontSize="14" TextColor="#212121"/>
+                                <Label Grid.Column="2" Text="{Binding CategoryName}" VerticalOptions="Center"
+                                       FontSize="13" TextColor="#757575"/>
+                                <Label Grid.Column="3" Text="{Binding Price, StringFormat='{0:N2}'}"
+                                       VerticalOptions="Center" FontSize="13"
+                                       HorizontalTextAlignment="End" TextColor="#212121"/>
+                                <Label Grid.Column="4" Text="{Binding StockQty}"
+                                       VerticalOptions="Center" FontSize="13"
+                                       HorizontalTextAlignment="Center" TextColor="#212121"/>
+                                <Label Grid.Column="5" Text="{Binding QuickLabel}"
+                                       VerticalOptions="Center" FontSize="11"
+                                       HorizontalTextAlignment="Center" TextColor="#757575"/>
+                                <HorizontalStackLayout Grid.Column="6" Spacing="6"
+                                                       HorizontalOptions="Center" VerticalOptions="Center">
+                                    <Button Text="Edit" FontSize="11"
+                                            BackgroundColor="#2196F3" TextColor="White"
+                                            CornerRadius="6" Padding="8,4"
+                                            HeightRequest="30"
+                                            Clicked="EditProduct_Clicked"/>
+                                    <Button Text="Del" FontSize="11"
+                                            BackgroundColor="#EF5350" TextColor="White"
+                                            CornerRadius="6" Padding="8,4"
+                                            HeightRequest="30"
+                                            Clicked="DeleteProduct_Clicked"/>
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+        </Frame>
+
+    </Grid>
+</ContentPage>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RoyalBakeryAdmin.Pages.SalesReportPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             BackgroundColor="#F0F2F5">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="30" RowSpacing="15">
+
+        <Label Text="Sales Report"
+               FontSize="28" FontAttributes="Bold" TextColor="#1A237E"/>
+
+        <!-- Date Filters -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="10">
+            <Label Text="From:" VerticalOptions="Center"/>
+            <DatePicker x:Name="FromDate" Grid.Column="1"/>
+            <Label Grid.Column="2" Text="To:" VerticalOptions="Center"/>
+            <DatePicker x:Name="ToDate" Grid.Column="3"/>
+            <Button Grid.Column="4" Text="Generate"
+                    BackgroundColor="#1A237E" TextColor="White"
+                    CornerRadius="8" HorizontalOptions="Start"
+                    Clicked="Generate_Clicked"/>
+        </Grid>
+
+        <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="15">
+
+            <!-- Summary -->
+            <FlexLayout Wrap="Wrap" JustifyContent="Start" Direction="Row">
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Total Revenue" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="RevenueLabel" Text="Rs. 0.00" FontSize="20"
+                               FontAttributes="Bold" TextColor="#4CAF50"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Total Invoices" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="InvoiceCountLabel" Text="0" FontSize="20"
+                               FontAttributes="Bold" TextColor="#1A237E"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Cash Collected" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="CashLabel" Text="Rs. 0.00" FontSize="20"
+                               FontAttributes="Bold" TextColor="#FF9800"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Card Payments" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="CardLabel" Text="Rs. 0.00" FontSize="20"
+                               FontAttributes="Bold" TextColor="#2196F3"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </FlexLayout>
+
+            <!-- Sales Table -->
+            <Frame Grid.Row="1" BackgroundColor="White" Padding="0" CornerRadius="12" HasShadow="True">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid ColumnDefinitions="80,150,100,100,100,100,*"
+                          Padding="12,8" BackgroundColor="#E8EAF6" ColumnSpacing="8">
+                        <Label Text="Invoice" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="1" Text="Date/Time" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="2" Text="Total" FontAttributes="Bold" TextColor="#1A237E" FontSize="12" HorizontalTextAlignment="End"/>
+                        <Label Grid.Column="3" Text="Cash" FontAttributes="Bold" TextColor="#1A237E" FontSize="12" HorizontalTextAlignment="End"/>
+                        <Label Grid.Column="4" Text="Card" FontAttributes="Bold" TextColor="#1A237E" FontSize="12" HorizontalTextAlignment="End"/>
+                        <Label Grid.Column="5" Text="Change" FontAttributes="Bold" TextColor="#1A237E" FontSize="12" HorizontalTextAlignment="End"/>
+                        <Label Grid.Column="6" Text="Cashier" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                    </Grid>
+                    <CollectionView x:Name="SalesView" Grid.Row="1">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="80,150,100,100,100,100,*"
+                                      Padding="12,6" ColumnSpacing="8">
+                                    <Label Text="{Binding InvoiceNumber}" FontSize="12" TextColor="#212121" VerticalOptions="Center"/>
+                                    <Label Grid.Column="1" Text="{Binding DateTime, StringFormat='{0:dd/MM/yyyy HH:mm}'}" FontSize="12" TextColor="#757575" VerticalOptions="Center"/>
+                                    <Label Grid.Column="2" Text="{Binding TotalAmount, StringFormat='{0:N2}'}" FontSize="12" HorizontalTextAlignment="End" TextColor="#212121" VerticalOptions="Center"/>
+                                    <Label Grid.Column="3" Text="{Binding CashAmount, StringFormat='{0:N2}'}" FontSize="12" HorizontalTextAlignment="End" TextColor="#757575" VerticalOptions="Center"/>
+                                    <Label Grid.Column="4" Text="{Binding CardAmount, StringFormat='{0:N2}'}" FontSize="12" HorizontalTextAlignment="End" TextColor="#757575" VerticalOptions="Center"/>
+                                    <Label Grid.Column="5" Text="{Binding ChangeGiven, StringFormat='{0:N2}'}" FontSize="12" HorizontalTextAlignment="End" TextColor="#757575" VerticalOptions="Center"/>
+                                    <Label Grid.Column="6" Text="{Binding CashierName}" FontSize="12" TextColor="#757575" VerticalOptions="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+            </Frame>
+        </Grid>
+
+    </Grid>
+</ContentPage>
