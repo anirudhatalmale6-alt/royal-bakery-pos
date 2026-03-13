@@ -61,7 +61,7 @@ public partial class DashboardPage : ContentPage
             // Today's GRN
             var todayGrns = await Task.Run(() =>
                 db.GRNs.Include(g => g.Items)
-                    .Where(g => g.DateTime >= today && g.DateTime < tomorrow).ToList());
+                    .Where(g => g.CreatedAt >= today && g.CreatedAt < tomorrow).ToList());
             TodayGRNLabel.Text = todayGrns.Count.ToString();
             TodayGRNItemsLabel.Text = $"{todayGrns.Sum(g => g.Items.Count)} items received";
 

@@ -34,8 +34,8 @@ public partial class GRNReportPage : ContentPage
 
             var grns = await Task.Run(() =>
                 db.GRNs.Include(g => g.Items).ThenInclude(i => i.MenuItem)
-                    .Where(g => g.DateTime >= from && g.DateTime < to)
-                    .OrderByDescending(g => g.DateTime)
+                    .Where(g => g.CreatedAt >= from && g.CreatedAt < to)
+                    .OrderByDescending(g => g.CreatedAt)
                     .ToList());
 
             int totalItems = grns.Sum(g => g.Items.Count);
@@ -48,7 +48,7 @@ public partial class GRNReportPage : ContentPage
             var viewModels = grns.Select(g => new GRNViewModel
             {
                 GRNNumber = g.GRNNumber,
-                DateStr = g.DateTime.ToString("dd/MM/yyyy HH:mm"),
+                DateStr = g.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
                 ItemsSummary = string.Join(", ",
                     g.Items.Select(i => $"{i.MenuItem?.Name ?? "?"} x{i.Quantity}")),
                 TotalQty = g.Items.Sum(i => i.Quantity)

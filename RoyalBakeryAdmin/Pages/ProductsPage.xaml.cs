@@ -96,7 +96,7 @@ public partial class ProductsPage : ContentPage
 
         try
         {
-            var menuItem = new MenuItem
+            var menuItem = new RoyalBakeryCashier.Data.Entities.MenuItem
             {
                 Name = name.Trim(),
                 Price = price,
