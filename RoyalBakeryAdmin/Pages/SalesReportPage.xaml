@@ -6,8 +6,10 @@
 
     <Grid RowDefinitions="Auto,Auto,*" Padding="30" RowSpacing="15">
 
-        <Label Text="Sales Report"
-               FontSize="28" FontAttributes="Bold" TextColor="#1A237E"/>
+        <Grid ColumnDefinitions="*,Auto">
+            <Label Text="Sales Report" FontSize="28" FontAttributes="Bold" TextColor="#1A237E"/>
+            <Entry x:Name="SearchEntry" Grid.Column="1" Placeholder="Search invoices..." WidthRequest="250" TextChanged="SearchEntry_TextChanged"/>
+        </Grid>
 
         <!-- Date Filters -->
         <Frame Grid.Row="1" BackgroundColor="White" Padding="12,10" CornerRadius="10" HasShadow="True">

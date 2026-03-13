@@ -60,62 +60,47 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.20.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.20.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.20.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.20.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.20.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.21.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.21.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.21.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.21.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.21.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.20
-          name: v1.20 - Restaurant POS + Bug Fixes + Admin Login
+          tag_name: v1.21
+          name: v1.21 - Restaurant Payment + GRN Fix + Admin Search
           body: |
-            ## Changes in v1.20
+            ## Changes in v1.21
 
-            ### New: Restaurant POS Terminal
-            - Separate Restaurant POS with 64 restaurant items across 6 categories (Rice, Dinner, Curry, Beverages, Side Dishes, Lunch Pack)
-            - Direct sale model — no inventory/stock tracking (restaurant items managed separately)
-            - Order source tracking: Dine In, Pickme Food, Ubereats
-            - KOT (Kitchen Order Ticket) printing for Pickme Food & Ubereats orders
-            - Separate KOT printer config via terminal.config (KOTPrinter setting)
-            - Invoice printing with "RESTAURANT" header
-            - Login screen with user authentication
-            - All 64 items auto-seeded on first run
+            ### Restaurant POS
+            - **ADDED**: Cash/Card payment popup (same as Cashier) — replaces direct sale
+            - Payment page with numpad, cash/card tabs, balance/change display
+            - Invoice receipt now includes Cash/Card/Change breakdown
 
-            ### POS Terminal (Salesman) Fixes
-            - **REMOVED**: "Order Created" popup — bill prints and screen clears silently
-            - **ADDED**: Out of stock popup when item has zero stock
-            - **ADDED**: Available quantity shown on each item card (next to price)
-            - **FIXED**: Cart animation removed — items appear instantly (KeepScrollOffset)
-            - **OPTIMIZED**: Faster item-to-cart flow
+            ### GRN Stock Clearance Fix
+            - **FIXED**: Explicit Update() calls on Stock and GRNItems entities during clearance
+            - Ensures CurrentQuantity deduction is properly persisted by EF Core
 
-            ### Cashier Fixes
-            - **ADDED**: Available quantity shown on each item card (next to price)
-            - **FIXED**: Cart animation removed — items appear instantly (KeepScrollOffset)
-
-            ### Admin Panel Fixes
-            - **ADDED**: Login screen with admin-only role check
-            - **FIXED**: Date filters now visible (white Frame with dark text, was invisible on light bg)
-            - **FIXED**: Database initialization moved to login flow (EnsureCreated + ApplyMigrations)
-
-            ### GRN Stock Clearance
-            - API code verified correct — FIFO deduction from GRNItems.CurrentQuantity and Stocks.Quantity
-            - If clearance not deducting, please update to latest API (v1.20)
+            ### Admin Panel Enhancements
+            - **ADDED**: Search on every page (Categories, Sales Report, GRN Report, Clearance Report)
+            - **IMPROVED**: Quick Category selection now uses dropdown (None/Quick 1/Quick 2) instead of number input
+            - **NEW**: Restaurant Products management page (add, edit, delete restaurant items)
+            - **NEW**: Restaurant Categories management page (add, edit, delete restaurant categories)
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.20.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.20.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.20.zip** — API server
-            - **RoyalBakeryAdmin-v1.20.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.20.zip** — Restaurant POS terminal EXE (NEW)
+            - **RoyalBakeryCashier-v1.21.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.21.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.21.zip** — API server
+            - **RoyalBakeryAdmin-v1.21.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.21.zip** — Restaurant POS terminal EXE (NEW)
           files: |
-            RoyalBakeryCashier-v1.20.zip
-            RoyalBakerySalesman-v1.20.zip
-            RoyalBakeryAPI-v1.20.zip
-            RoyalBakeryAdmin-v1.20.zip
-            RoyalBakeryRestaurant-v1.20.zip
+            RoyalBakeryCashier-v1.21.zip
+            RoyalBakerySalesman-v1.21.zip
+            RoyalBakeryAPI-v1.21.zip
+            RoyalBakeryAdmin-v1.21.zip
+            RoyalBakeryRestaurant-v1.21.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

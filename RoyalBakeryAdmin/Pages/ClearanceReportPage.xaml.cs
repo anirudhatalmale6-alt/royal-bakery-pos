@@ -6,6 +6,8 @@ namespace RoyalBakeryAdmin.Pages;
 
 public partial class ClearanceReportPage : ContentPage
 {
+    private List<ClearanceViewModel> _allClearances = new();
+
     public ClearanceReportPage()
     {
         InitializeComponent();
@@ -50,12 +52,30 @@ public partial class ClearanceReportPage : ContentPage
                 Note = c.Note ?? ""
             }).ToList();
 
-            ClearanceView.ItemsSource = new ObservableCollection<ClearanceViewModel>(viewModels);
+            _allClearances = viewModels;
+            ClearanceView.ItemsSource = new ObservableCollection<ClearanceViewModel>(_allClearances);
         }
         catch (Exception ex)
         {
             await DisplayAlert("Error", ex.Message, "OK");
         }
+    }
+
+    private void SearchEntry_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var keyword = (e.NewTextValue ?? "").Trim();
+        if (string.IsNullOrEmpty(keyword))
+        {
+            ClearanceView.ItemsSource = new ObservableCollection<ClearanceViewModel>(_allClearances);
+            return;
+        }
+
+        var filtered = _allClearances
+            .Where(c => c.ItemName.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                     || c.Reason.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        ClearanceView.ItemsSource = new ObservableCollection<ClearanceViewModel>(filtered);
     }
 
     public class ClearanceViewModel

@@ -3,9 +3,7 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using RoyalBakeryCashier.Data;
 using RoyalBakeryCashier.Data.Entities;
-using RoyalBakeryCashier.Helpers;
 using System.Collections.ObjectModel;
-using System.Text;
 
 namespace RoyalBakeryRestaurant.Pages;
 
@@ -258,192 +256,34 @@ public partial class RestaurantPage : ContentPage
         UpdateTotal();
     }
 
-    // ===== COMPLETE SALE (Direct — no cashier step) =====
+    // ===== COMPLETE SALE — open Payment popup =====
     private async void CompleteSale_Clicked(object sender, EventArgs e)
     {
         if (!_cartItems.Any()) return;
 
-        try
+        string orderSource = OrderSourcePicker.SelectedItem?.ToString() ?? "Dine In";
+        decimal total = _cartItems.Sum(c => c.Total);
+
+        var cartData = _cartItems.Select(c => new RestaurantPaymentPage.CartItemData
         {
-            // Generate invoice number
-            var lastSale = _dbContext.RestaurantSales
-                .OrderByDescending(s => s.Id).FirstOrDefault();
-            int nextNum = (lastSale?.Id ?? 0) + 1;
-            string invoiceNumber = $"RES-{nextNum:D5}";
+            RestaurantItemId = c.RestaurantItemId,
+            Name = c.Name,
+            Quantity = c.Quantity,
+            Price = c.Price,
+            Total = c.Total
+        }).ToList();
 
-            string orderSource = OrderSourcePicker.SelectedItem?.ToString() ?? "Dine In";
+        var paymentPage = new RestaurantPaymentPage(total, cartData, orderSource, App.LoggedInUserName);
 
-            var sale = new RestaurantSale
-            {
-                InvoiceNumber = invoiceNumber,
-                DateTime = DateTime.Now,
-                TotalAmount = _cartItems.Sum(c => c.Total),
-                CashAmount = _cartItems.Sum(c => c.Total), // Default to cash
-                CardAmount = 0,
-                ChangeGiven = 0,
-                CashierName = App.LoggedInUserName,
-                OrderSource = orderSource,
-                Items = _cartItems.Select(c => new RestaurantSaleItem
-                {
-                    RestaurantItemId = c.RestaurantItemId,
-                    ItemName = c.Name,
-                    Quantity = c.Quantity,
-                    PricePerItem = c.Price,
-                    TotalPrice = c.Total
-                }).ToList()
-            };
-
-            var strategy = _dbContext.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async () =>
-            {
-                _dbContext.RestaurantSales.Add(sale);
-                await _dbContext.SaveChangesAsync();
-            });
-
-            // Print invoice
-            await PrintInvoice(sale);
-
-            // Print KOT for Pickme/Ubereats orders
-            if (orderSource == "Pickme Food" || orderSource == "Ubereats")
-            {
-                await PrintKOT(sale);
-            }
-
-            // Clear cart silently for next order
-            _cartItems.Clear();
-            UpdateTotal();
-        }
-        catch (Exception ex)
+        await Navigation.PushModalAsync(new NavigationPage(paymentPage)
         {
-            await DisplayAlert("Error",
-                $"Could not complete sale.\n\n{ex.InnerException?.Message ?? ex.Message}", "OK");
-        }
-    }
+            BarBackgroundColor = Color.FromArgb("#1A1A1A"),
+            BarTextColor = Colors.White
+        });
 
-    private async Task PrintInvoice(RestaurantSale sale)
-    {
-        const int W = 48;
-        string Separator(char c = '-') => new string(c, W);
-        string Row(string l, string r) => l + r.PadLeft(W - l.Length);
-
-        try
-        {
-            string printerName = Preferences.Get("ThermalPrinterName", "");
-            if (string.IsNullOrEmpty(printerName))
-            {
-                printerName = RawPrinterHelper.FindThermalPrinter() ?? "";
-                if (!string.IsNullOrEmpty(printerName))
-                    Preferences.Set("ThermalPrinterName", printerName);
-            }
-            if (string.IsNullOrEmpty(printerName)) return;
-
-            var enc = Encoding.GetEncoding("IBM437");
-            byte[] init = { 0x1B, 0x40 };
-            byte[] center = { 0x1B, 0x61, 0x01 };
-            byte[] left = { 0x1B, 0x61, 0x00 };
-            byte[] feedCut = { 0x0A, 0x0A, 0x0A, 0x1D, 0x56, 0x41, 0x03 };
-
-            using var ms = new MemoryStream();
-            void Emit(byte[] b) => ms.Write(b, 0, b.Length);
-
-            Emit(init);
-            Emit(center);
-            Emit(enc.GetBytes("The Royal Bakery\n"));
-            Emit(enc.GetBytes("RESTAURANT\n"));
-            Emit(enc.GetBytes("202, Galle Road, Colombo-06\n"));
-            Emit(enc.GetBytes(Separator('=') + "\n"));
-
-            Emit(left);
-            Emit(enc.GetBytes(Row("Invoice:", sale.InvoiceNumber) + "\n"));
-            Emit(enc.GetBytes(Row("Date:", sale.DateTime.ToString("dd/MM/yyyy HH:mm")) + "\n"));
-            Emit(enc.GetBytes(Row("Source:", sale.OrderSource) + "\n"));
-            Emit(enc.GetBytes(Separator() + "\n"));
-
-            foreach (var item in sale.Items)
-            {
-                Emit(enc.GetBytes(item.ItemName + "\n"));
-                Emit(enc.GetBytes(Row($" {item.Quantity} x {item.PricePerItem:N2}", $"{item.TotalPrice:N2}") + "\n"));
-            }
-
-            Emit(enc.GetBytes(Separator() + "\n"));
-            Emit(enc.GetBytes(Row("TOTAL", $"Rs. {sale.TotalAmount:N2}") + "\n"));
-            Emit(enc.GetBytes(Separator('=') + "\n"));
-
-            Emit(center);
-            Emit(enc.GetBytes("Thank you!\n"));
-            Emit(enc.GetBytes("Powered by EzyCode\n"));
-            Emit(feedCut);
-
-            RawPrinterHelper.SendBytesToPrinter(printerName, ms.ToArray());
-        }
-        catch { /* silent */ }
-    }
-
-    /// <summary>
-    /// Print Kitchen Order Ticket (KOT) for Pickme Food / Ubereats orders.
-    /// Uses separate KOT printer if configured, otherwise same printer.
-    /// </summary>
-    private async Task PrintKOT(RestaurantSale sale)
-    {
-        const int W = 48;
-        string Separator(char c = '-') => new string(c, W);
-
-        try
-        {
-            // Use KOT printer if configured, otherwise fall back to invoice printer
-            string printerName = App.KOTPrinterName;
-            if (string.IsNullOrEmpty(printerName))
-            {
-                printerName = Preferences.Get("ThermalPrinterName", "");
-                if (string.IsNullOrEmpty(printerName))
-                    printerName = RawPrinterHelper.FindThermalPrinter() ?? "";
-            }
-            if (string.IsNullOrEmpty(printerName)) return;
-
-            var enc = Encoding.GetEncoding("IBM437");
-            byte[] init = { 0x1B, 0x40 };
-            byte[] center = { 0x1B, 0x61, 0x01 };
-            byte[] left = { 0x1B, 0x61, 0x00 };
-            byte[] bold_on = { 0x1B, 0x45, 0x01 };
-            byte[] bold_off = { 0x1B, 0x45, 0x00 };
-            byte[] dbl_on = { 0x1D, 0x21, 0x11 }; // double height+width
-            byte[] dbl_off = { 0x1D, 0x21, 0x00 };
-            byte[] feedCut = { 0x0A, 0x0A, 0x0A, 0x1D, 0x56, 0x41, 0x03 };
-
-            using var ms = new MemoryStream();
-            void Emit(byte[] b) => ms.Write(b, 0, b.Length);
-
-            Emit(init);
-            Emit(center);
-            Emit(dbl_on);
-            Emit(enc.GetBytes("** KOT **\n"));
-            Emit(dbl_off);
-            Emit(bold_on);
-            Emit(enc.GetBytes($"[ {sale.OrderSource.ToUpper()} ]\n"));
-            Emit(bold_off);
-            Emit(enc.GetBytes(Separator('=') + "\n"));
-
-            Emit(left);
-            Emit(enc.GetBytes($"Order: {sale.InvoiceNumber}\n"));
-            Emit(enc.GetBytes($"Time:  {sale.DateTime:HH:mm dd/MM}\n"));
-            Emit(enc.GetBytes(Separator() + "\n\n"));
-
-            Emit(bold_on);
-            foreach (var item in sale.Items)
-            {
-                string line = $"{item.Quantity}x  {item.ItemName}\n";
-                Emit(enc.GetBytes(line));
-            }
-            Emit(bold_off);
-
-            Emit(enc.GetBytes("\n" + Separator() + "\n"));
-            Emit(center);
-            Emit(enc.GetBytes($"Items: {sale.Items.Sum(i => i.Quantity)}\n"));
-            Emit(feedCut);
-
-            RawPrinterHelper.SendBytesToPrinter(printerName, ms.ToArray());
-        }
-        catch { /* silent */ }
+        // Clear cart after returning from payment (sale was completed there)
+        _cartItems.Clear();
+        UpdateTotal();
     }
 
     private async void SalesHistory_Clicked(object sender, EventArgs e)

@@ -4,11 +4,11 @@ using System.Collections.ObjectModel;
 
 namespace RoyalBakeryAdmin.Pages;
 
-public partial class CategoriesPage : ContentPage
+public partial class RestaurantCategoriesPage : ContentPage
 {
-    private List<CategoryViewModel> _allCategories = new();
+    private List<RestaurantCategoryViewModel> _allCategories = new();
 
-    public CategoriesPage()
+    public RestaurantCategoriesPage()
     {
         InitializeComponent();
     }
@@ -24,18 +24,17 @@ public partial class CategoriesPage : ContentPage
         try
         {
             var db = new StockDbContext();
-            var categories = await Task.Run(() => db.MenuCategories.OrderBy(c => c.Name).ToList());
-            var items = await Task.Run(() => db.MenuItems.ToList());
+            var categories = await Task.Run(() => db.RestaurantCategories.OrderBy(c => c.Name).ToList());
+            var items = await Task.Run(() => db.RestaurantItems.ToList());
 
-            var viewModels = categories.Select(c => new CategoryViewModel
+            _allCategories = categories.Select(c => new RestaurantCategoryViewModel
             {
                 Id = c.Id,
                 Name = c.Name,
-                ProductCount = items.Count(i => i.MenuCategoryId == c.Id)
+                ProductCount = items.Count(i => i.RestaurantCategoryId == c.Id)
             }).ToList();
 
-            _allCategories = viewModels;
-            CategoriesView.ItemsSource = new ObservableCollection<CategoryViewModel>(_allCategories);
+            CategoriesView.ItemsSource = new ObservableCollection<RestaurantCategoryViewModel>(_allCategories);
         }
         catch (Exception ex)
         {
@@ -48,7 +47,7 @@ public partial class CategoriesPage : ContentPage
         var keyword = (e.NewTextValue ?? "").Trim();
         if (string.IsNullOrEmpty(keyword))
         {
-            CategoriesView.ItemsSource = new ObservableCollection<CategoryViewModel>(_allCategories);
+            CategoriesView.ItemsSource = new ObservableCollection<RestaurantCategoryViewModel>(_allCategories);
             return;
         }
 
@@ -56,18 +55,18 @@ public partial class CategoriesPage : ContentPage
             .Where(c => c.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        CategoriesView.ItemsSource = new ObservableCollection<CategoryViewModel>(filtered);
+        CategoriesView.ItemsSource = new ObservableCollection<RestaurantCategoryViewModel>(filtered);
     }
 
     private async void AddCategory_Clicked(object sender, EventArgs e)
     {
-        string name = await DisplayPromptAsync("Add Category", "Category Name:");
+        string name = await DisplayPromptAsync("Add Restaurant Category", "Category Name:");
         if (string.IsNullOrWhiteSpace(name)) return;
 
         try
         {
             var db = new StockDbContext();
-            db.MenuCategories.Add(new MenuCategory { Name = name.Trim() });
+            db.RestaurantCategories.Add(new RestaurantCategory { Name = name.Trim() });
             await db.SaveChangesAsync();
             await DisplayAlert("Success", $"Category '{name.Trim()}' added.", "OK");
             await LoadCategories();
@@ -80,15 +79,15 @@ public partial class CategoriesPage : ContentPage
 
     private async void EditCategory_Clicked(object sender, EventArgs e)
     {
-        if (sender is Button btn && btn.BindingContext is CategoryViewModel cat)
+        if (sender is Button btn && btn.BindingContext is RestaurantCategoryViewModel cat)
         {
-            string name = await DisplayPromptAsync("Edit Category", "Name:", initialValue: cat.Name);
+            string name = await DisplayPromptAsync("Edit Restaurant Category", "Name:", initialValue: cat.Name);
             if (string.IsNullOrWhiteSpace(name)) return;
 
             try
             {
                 var db = new StockDbContext();
-                var entity = db.MenuCategories.Find(cat.Id);
+                var entity = db.RestaurantCategories.Find(cat.Id);
                 if (entity == null) return;
 
                 entity.Name = name.Trim();
@@ -104,12 +103,12 @@ public partial class CategoriesPage : ContentPage
 
     private async void DeleteCategory_Clicked(object sender, EventArgs e)
     {
-        if (sender is Button btn && btn.BindingContext is CategoryViewModel cat)
+        if (sender is Button btn && btn.BindingContext is RestaurantCategoryViewModel cat)
         {
             if (cat.ProductCount > 0)
             {
                 await DisplayAlert("Cannot Delete",
-                    $"Category '{cat.Name}' has {cat.ProductCount} products. Move or delete them first.", "OK");
+                    $"Category '{cat.Name}' has {cat.ProductCount} product(s). Move or delete them first.", "OK");
                 return;
             }
 
@@ -120,8 +119,8 @@ public partial class CategoriesPage : ContentPage
             try
             {
                 var db = new StockDbContext();
-                var entity = db.MenuCategories.Find(cat.Id);
-                if (entity != null) db.MenuCategories.Remove(entity);
+                var entity = db.RestaurantCategories.Find(cat.Id);
+                if (entity != null) db.RestaurantCategories.Remove(entity);
                 await db.SaveChangesAsync();
                 await LoadCategories();
             }
@@ -132,7 +131,7 @@ public partial class CategoriesPage : ContentPage
         }
     }
 
-    public class CategoryViewModel
+    public class RestaurantCategoryViewModel
     {
         public int Id { get; set; }
         public string Name { get; set; } = "";

@@ -6,6 +6,8 @@ namespace RoyalBakeryAdmin.Pages;
 
 public partial class SalesReportPage : ContentPage
 {
+    private List<RoyalBakeryCashier.Data.Entities.Sale> _allSales = new();
+
     public SalesReportPage()
     {
         InitializeComponent();
@@ -43,11 +45,29 @@ public partial class SalesReportPage : ContentPage
             CashLabel.Text = $"Rs. {sales.Sum(s => s.CashAmount):N2}";
             CardLabel.Text = $"Rs. {sales.Sum(s => s.CardAmount):N2}";
 
-            SalesView.ItemsSource = new ObservableCollection<RoyalBakeryCashier.Data.Entities.Sale>(sales);
+            _allSales = sales;
+            SalesView.ItemsSource = new ObservableCollection<RoyalBakeryCashier.Data.Entities.Sale>(_allSales);
         }
         catch (Exception ex)
         {
             await DisplayAlert("Error", ex.Message, "OK");
         }
+    }
+
+    private void SearchEntry_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var keyword = (e.NewTextValue ?? "").Trim();
+        if (string.IsNullOrEmpty(keyword))
+        {
+            SalesView.ItemsSource = new ObservableCollection<RoyalBakeryCashier.Data.Entities.Sale>(_allSales);
+            return;
+        }
+
+        var filtered = _allSales
+            .Where(s => (s.InvoiceNumber ?? "").Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                     || (s.CashierName ?? "").Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        SalesView.ItemsSource = new ObservableCollection<RoyalBakeryCashier.Data.Entities.Sale>(filtered);
     }
 }

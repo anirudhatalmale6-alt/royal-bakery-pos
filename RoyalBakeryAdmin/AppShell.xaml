@@ -61,4 +61,12 @@
         <ShellContent ContentTemplate="{DataTemplate pages:ClearanceReportPage}"/>
     </FlyoutItem>
 
+    <FlyoutItem Title="Restaurant Products">
+        <ShellContent ContentTemplate="{DataTemplate pages:RestaurantProductsPage}"/>
+    </FlyoutItem>
+
+    <FlyoutItem Title="Restaurant Categories">
+        <ShellContent ContentTemplate="{DataTemplate pages:RestaurantCategoriesPage}"/>
+    </FlyoutItem>
+
 </Shell>

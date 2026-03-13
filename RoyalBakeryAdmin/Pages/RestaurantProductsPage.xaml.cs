@@ -5,11 +5,11 @@ using System.Collections.ObjectModel;
 
 namespace RoyalBakeryAdmin.Pages;
 
-public partial class ProductsPage : ContentPage
+public partial class RestaurantProductsPage : ContentPage
 {
-    private List<ProductViewModel> _allProducts = new();
+    private List<RestaurantProductViewModel> _allProducts = new();
 
-    public ProductsPage()
+    public RestaurantProductsPage()
     {
         InitializeComponent();
     }
@@ -25,27 +25,21 @@ public partial class ProductsPage : ContentPage
         try
         {
             var db = new StockDbContext();
-            var categories = await Task.Run(() => db.MenuCategories.ToList());
+            var categories = await Task.Run(() => db.RestaurantCategories.ToList());
             var catMap = categories.ToDictionary(c => c.Id, c => c.Name);
 
-            var items = await Task.Run(() => db.MenuItems.ToList());
-            var stocks = await Task.Run(() => db.Stocks.ToList());
-            var stockMap = stocks.ToDictionary(s => s.MenuItemId, s => s.Quantity);
+            var items = await Task.Run(() => db.RestaurantItems.ToList());
 
-            _allProducts = items.Select(i => new ProductViewModel
+            _allProducts = items.Select(i => new RestaurantProductViewModel
             {
                 Id = i.Id,
                 Name = i.Name,
                 Price = i.Price,
-                MenuCategoryId = i.MenuCategoryId,
-                CategoryName = catMap.TryGetValue(i.MenuCategoryId, out var cn) ? cn : "—",
-                StockQty = stockMap.TryGetValue(i.Id, out var sq) ? sq : 0,
-                IsQuick = i.IsQuick,
-                QuickCategory = i.QuickCategory,
-                QuickLabel = i.QuickCategory > 0 ? $"Q{i.QuickCategory}" : (i.IsQuick ? "Q1" : "—")
+                RestaurantCategoryId = i.RestaurantCategoryId,
+                CategoryName = catMap.TryGetValue(i.RestaurantCategoryId, out var cn) ? cn : "—"
             }).OrderBy(p => p.CategoryName).ThenBy(p => p.Name).ToList();
 
-            ProductsView.ItemsSource = new ObservableCollection<ProductViewModel>(_allProducts);
+            ProductsView.ItemsSource = new ObservableCollection<RestaurantProductViewModel>(_allProducts);
         }
         catch (Exception ex)
         {
@@ -58,7 +52,7 @@ public partial class ProductsPage : ContentPage
         var keyword = (e.NewTextValue ?? "").Trim();
         if (string.IsNullOrEmpty(keyword))
         {
-            ProductsView.ItemsSource = new ObservableCollection<ProductViewModel>(_allProducts);
+            ProductsView.ItemsSource = new ObservableCollection<RestaurantProductViewModel>(_allProducts);
             return;
         }
 
@@ -67,18 +61,24 @@ public partial class ProductsPage : ContentPage
                      || p.CategoryName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        ProductsView.ItemsSource = new ObservableCollection<ProductViewModel>(filtered);
+        ProductsView.ItemsSource = new ObservableCollection<RestaurantProductViewModel>(filtered);
     }
 
     private async void AddProduct_Clicked(object sender, EventArgs e)
     {
         var db = new StockDbContext();
-        var categories = db.MenuCategories.OrderBy(c => c.Name).ToList();
+        var categories = db.RestaurantCategories.OrderBy(c => c.Name).ToList();
 
-        string name = await DisplayPromptAsync("Add Product", "Product Name:");
+        if (categories.Count == 0)
+        {
+            await DisplayAlert("No Categories", "Please add a restaurant category first.", "OK");
+            return;
+        }
+
+        string name = await DisplayPromptAsync("Add Restaurant Product", "Product Name:");
         if (string.IsNullOrWhiteSpace(name)) return;
 
-        string priceStr = await DisplayPromptAsync("Add Product", "Price:", keyboard: Keyboard.Numeric);
+        string priceStr = await DisplayPromptAsync("Add Restaurant Product", "Price:", keyboard: Keyboard.Numeric);
         if (!decimal.TryParse(priceStr, out decimal price) || price < 0) return;
 
         // Category selection
@@ -89,33 +89,19 @@ public partial class ProductsPage : ContentPage
         var selectedCat = categories.FirstOrDefault(c => c.Name == catChoice);
         if (selectedCat == null) return;
 
-        string quickChoice = await DisplayActionSheet("Quick Category", "Cancel", null, "None", "Quick 1", "Quick 2");
-        int quickCat = quickChoice switch
-        {
-            "Quick 1" => 1,
-            "Quick 2" => 2,
-            _ => 0
-        };
-
         try
         {
-            var menuItem = new RoyalBakeryCashier.Data.Entities.MenuItem
+            var item = new RestaurantItem
             {
                 Name = name.Trim(),
                 Price = price,
-                MenuCategoryId = selectedCat.Id,
-                IsQuick = quickCat > 0,
-                QuickCategory = quickCat
+                RestaurantCategoryId = selectedCat.Id
             };
 
-            db.MenuItems.Add(menuItem);
+            db.RestaurantItems.Add(item);
             await db.SaveChangesAsync();
 
-            // Create stock entry
-            db.Stocks.Add(new Stock { MenuItemId = menuItem.Id, Quantity = 0 });
-            await db.SaveChangesAsync();
-
-            await DisplayAlert("Success", $"Product '{name}' added.", "OK");
+            await DisplayAlert("Success", $"Product '{name.Trim()}' added.", "OK");
             await LoadProducts();
         }
         catch (Exception ex)
@@ -126,18 +112,18 @@ public partial class ProductsPage : ContentPage
 
     private async void EditProduct_Clicked(object sender, EventArgs e)
     {
-        if (sender is Button btn && btn.BindingContext is ProductViewModel product)
+        if (sender is Button btn && btn.BindingContext is RestaurantProductViewModel product)
         {
             var db = new StockDbContext();
-            var item = db.MenuItems.Find(product.Id);
+            var item = db.RestaurantItems.Find(product.Id);
             if (item == null) return;
 
-            var categories = db.MenuCategories.OrderBy(c => c.Name).ToList();
+            var categories = db.RestaurantCategories.OrderBy(c => c.Name).ToList();
 
-            string name = await DisplayPromptAsync("Edit Product", "Name:", initialValue: item.Name);
+            string name = await DisplayPromptAsync("Edit Restaurant Product", "Name:", initialValue: item.Name);
             if (string.IsNullOrWhiteSpace(name)) return;
 
-            string priceStr = await DisplayPromptAsync("Edit Product", "Price:",
+            string priceStr = await DisplayPromptAsync("Edit Restaurant Product", "Price:",
                 initialValue: item.Price.ToString("F2"), keyboard: Keyboard.Numeric);
             if (!decimal.TryParse(priceStr, out decimal price) || price < 0) return;
 
@@ -148,24 +134,14 @@ public partial class ProductsPage : ContentPage
             var selectedCat = categories.FirstOrDefault(c => c.Name == catChoice);
             if (selectedCat == null) return;
 
-            string quickChoice = await DisplayActionSheet("Quick Category", "Cancel", null, "None", "Quick 1", "Quick 2");
-            int quickCat = quickChoice switch
-            {
-                "Quick 1" => 1,
-                "Quick 2" => 2,
-                _ => 0
-            };
-
             try
             {
                 item.Name = name.Trim();
                 item.Price = price;
-                item.MenuCategoryId = selectedCat.Id;
-                item.QuickCategory = quickCat;
-                item.IsQuick = quickCat > 0;
+                item.RestaurantCategoryId = selectedCat.Id;
 
                 await db.SaveChangesAsync();
-                await DisplayAlert("Success", $"Product updated.", "OK");
+                await DisplayAlert("Success", "Product updated.", "OK");
                 await LoadProducts();
             }
             catch (Exception ex)
@@ -177,42 +153,35 @@ public partial class ProductsPage : ContentPage
 
     private async void DeleteProduct_Clicked(object sender, EventArgs e)
     {
-        if (sender is Button btn && btn.BindingContext is ProductViewModel product)
+        if (sender is Button btn && btn.BindingContext is RestaurantProductViewModel product)
         {
             bool confirm = await DisplayAlert("Delete Product",
-                $"Are you sure you want to delete '{product.Name}'?\n\nThis will also remove its stock entry.",
+                $"Are you sure you want to delete '{product.Name}'?",
                 "Delete", "Cancel");
             if (!confirm) return;
 
             try
             {
                 var db = new StockDbContext();
-                var stock = db.Stocks.FirstOrDefault(s => s.MenuItemId == product.Id);
-                if (stock != null) db.Stocks.Remove(stock);
-
-                var item = db.MenuItems.Find(product.Id);
-                if (item != null) db.MenuItems.Remove(item);
+                var item = db.RestaurantItems.Find(product.Id);
+                if (item != null) db.RestaurantItems.Remove(item);
 
                 await db.SaveChangesAsync();
                 await LoadProducts();
             }
             catch (Exception ex)
             {
-                await DisplayAlert("Error", $"Cannot delete: {ex.InnerException?.Message ?? ex.Message}\n\nItem may be referenced by orders or GRNs.", "OK");
+                await DisplayAlert("Error", $"Cannot delete: {ex.InnerException?.Message ?? ex.Message}\n\nItem may be referenced by restaurant orders.", "OK");
             }
         }
     }
 
-    public class ProductViewModel
+    public class RestaurantProductViewModel
     {
         public int Id { get; set; }
         public string Name { get; set; } = "";
         public decimal Price { get; set; }
-        public int MenuCategoryId { get; set; }
         public string CategoryName { get; set; } = "";
-        public int StockQty { get; set; }
-        public bool IsQuick { get; set; }
-        public int QuickCategory { get; set; }
-        public string QuickLabel { get; set; } = "—";
+        public int RestaurantCategoryId { get; set; }
     }
 }

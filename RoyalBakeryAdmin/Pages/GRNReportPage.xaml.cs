@@ -6,6 +6,8 @@ namespace RoyalBakeryAdmin.Pages;
 
 public partial class GRNReportPage : ContentPage
 {
+    private List<GRNViewModel> _allGRNs = new();
+
     public GRNReportPage()
     {
         InitializeComponent();
@@ -54,12 +56,30 @@ public partial class GRNReportPage : ContentPage
                 TotalQty = g.Items.Sum(i => i.Quantity)
             }).ToList();
 
-            GRNView.ItemsSource = new ObservableCollection<GRNViewModel>(viewModels);
+            _allGRNs = viewModels;
+            GRNView.ItemsSource = new ObservableCollection<GRNViewModel>(_allGRNs);
         }
         catch (Exception ex)
         {
             await DisplayAlert("Error", ex.Message, "OK");
         }
+    }
+
+    private void SearchEntry_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var keyword = (e.NewTextValue ?? "").Trim();
+        if (string.IsNullOrEmpty(keyword))
+        {
+            GRNView.ItemsSource = new ObservableCollection<GRNViewModel>(_allGRNs);
+            return;
+        }
+
+        var filtered = _allGRNs
+            .Where(g => g.GRNNumber.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                     || g.ItemsSummary.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        GRNView.ItemsSource = new ObservableCollection<GRNViewModel>(filtered);
     }
 
     public class GRNViewModel

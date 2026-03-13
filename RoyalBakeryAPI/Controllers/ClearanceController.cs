@@ -58,6 +58,7 @@ public class ClearanceController : ControllerBase
 
             // Reduce stock
             stock.Quantity -= request.Quantity;
+            _db.Stocks.Update(stock);
 
             // FIFO: reduce CurrentQuantity from oldest GRN items
             int remaining = request.Quantity;
@@ -71,6 +72,7 @@ public class ClearanceController : ControllerBase
                 if (remaining <= 0) break;
                 int deduct = Math.Min(remaining, gi.CurrentQuantity);
                 gi.CurrentQuantity -= deduct;
+                _db.GRNItems.Update(gi);
                 remaining -= deduct;
             }
 
