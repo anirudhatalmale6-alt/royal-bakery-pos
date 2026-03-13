@@ -416,12 +416,17 @@ namespace RoyalBakeryCashier.Pages
             }
         }
 
-        private void AddToCart(ItemViewModel menuItem, int qty)
+        private async void AddToCart(ItemViewModel menuItem, int qty)
         {
             if (qty <= 0) return;
 
             int available = menuItem.AvailableStock;
-            if (available <= 0) return;
+            if (available <= 0)
+            {
+                await DisplayAlert("Out of Stock",
+                    $"\"{menuItem.Name}\" has no stock available.", "OK");
+                return;
+            }
             if (qty > available) qty = available;
 
             var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);

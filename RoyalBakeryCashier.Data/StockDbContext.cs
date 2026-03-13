@@ -27,6 +27,12 @@ namespace RoyalBakeryCashier.Data
         public DbSet<SalesOrderItem> SalesOrderItems { get; set; }
         public DbSet<User> Users { get; set; }
 
+        // Restaurant entities (separate menu, no inventory)
+        public DbSet<RestaurantCategory> RestaurantCategories { get; set; }
+        public DbSet<RestaurantItem> RestaurantItems { get; set; }
+        public DbSet<RestaurantSale> RestaurantSales { get; set; }
+        public DbSet<RestaurantSaleItem> RestaurantSaleItems { get; set; }
+
         /// <summary>
         /// Static connection string override. Set from App.xaml.cs based on terminal.config.
         /// If null/empty, falls back to localhost with Windows Authentication.
@@ -116,6 +122,25 @@ namespace RoyalBakeryCashier.Data
             modelBuilder.Entity<OrderItem>().Property(p => p.PricePerItem).HasColumnType("decimal(18,2)");
             modelBuilder.Entity<OrderItem>().Property(p => p.TotalPrice).HasColumnType("decimal(18,2)");
             modelBuilder.Entity<Stock>().Property(s => s.Quantity).HasColumnType("int"); // integer quantity
+
+            // ===== Restaurant Entities =====
+            modelBuilder.Entity<RestaurantSaleItem>()
+                .HasOne(si => si.Sale)
+                .WithMany(s => s.Items)
+                .HasForeignKey(si => si.RestaurantSaleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RestaurantSaleItem>()
+                .HasOne(si => si.RestaurantItem)
+                .WithMany()
+                .HasForeignKey(si => si.RestaurantItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<RestaurantItem>()
+                .HasOne(ri => ri.Category)
+                .WithMany()
+                .HasForeignKey(ri => ri.RestaurantCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         /// <summary>
@@ -303,6 +328,48 @@ namespace RoyalBakeryCashier.Data
                       IsActive BIT NOT NULL DEFAULT 1,
                       CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE()
                   );",
+
+                // ===== Restaurant Tables =====
+                @"IF OBJECT_ID('RestaurantCategories', 'U') IS NULL
+                  CREATE TABLE RestaurantCategories (
+                      Id INT IDENTITY(1,1) PRIMARY KEY,
+                      Name NVARCHAR(100) NOT NULL
+                  );",
+
+                @"IF OBJECT_ID('RestaurantItems', 'U') IS NULL
+                  CREATE TABLE RestaurantItems (
+                      Id INT IDENTITY(1,1) PRIMARY KEY,
+                      Name NVARCHAR(200) NOT NULL,
+                      Price DECIMAL(18,2) NOT NULL DEFAULT 0,
+                      RestaurantCategoryId INT NOT NULL,
+                      CONSTRAINT FK_RestaurantItems_Categories FOREIGN KEY (RestaurantCategoryId) REFERENCES RestaurantCategories(Id) ON DELETE NO ACTION
+                  );",
+
+                @"IF OBJECT_ID('RestaurantSales', 'U') IS NULL
+                  CREATE TABLE RestaurantSales (
+                      Id INT IDENTITY(1,1) PRIMARY KEY,
+                      InvoiceNumber NVARCHAR(MAX) NOT NULL DEFAULT '',
+                      DateTime DATETIME2 NOT NULL,
+                      TotalAmount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                      CashAmount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                      CardAmount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                      ChangeGiven DECIMAL(18,2) NOT NULL DEFAULT 0,
+                      CashierName NVARCHAR(MAX) NULL,
+                      OrderSource NVARCHAR(50) NOT NULL DEFAULT 'Dine In'
+                  );",
+
+                @"IF OBJECT_ID('RestaurantSaleItems', 'U') IS NULL
+                  CREATE TABLE RestaurantSaleItems (
+                      Id INT IDENTITY(1,1) PRIMARY KEY,
+                      RestaurantSaleId INT NOT NULL,
+                      RestaurantItemId INT NOT NULL,
+                      ItemName NVARCHAR(MAX) NOT NULL DEFAULT '',
+                      Quantity INT NOT NULL,
+                      PricePerItem DECIMAL(18,2) NOT NULL DEFAULT 0,
+                      TotalPrice DECIMAL(18,2) NOT NULL DEFAULT 0,
+                      CONSTRAINT FK_RestaurantSaleItems_Sales FOREIGN KEY (RestaurantSaleId) REFERENCES RestaurantSales(Id) ON DELETE CASCADE,
+                      CONSTRAINT FK_RestaurantSaleItems_Items FOREIGN KEY (RestaurantItemId) REFERENCES RestaurantItems(Id) ON DELETE NO ACTION
+                  );",
             };
 
             foreach (var sql in creates)
@@ -323,6 +390,107 @@ namespace RoyalBakeryCashier.Data
 
             // Seed menu categories and items from Royal Bakery price list
             SeedMenuData();
+
+            // Seed restaurant menu data
+            SeedRestaurantData();
+        }
+
+        private void SeedRestaurantData()
+        {
+            try
+            {
+                // Check if restaurant data already seeded
+                bool hasData = false;
+                try { hasData = RestaurantCategories.Any(); } catch { return; }
+                if (hasData) return;
+
+                Database.ExecuteSqlRaw(@"
+                    INSERT INTO RestaurantCategories (Name) VALUES
+                    ('RICE'), ('DINNER'), ('CURRY'), ('BEVERAGES'), ('SIDE DISHES'), ('LUNCH PACK');
+                ");
+
+                Database.ExecuteSqlRaw(@"
+                    -- RICE (CategoryId = look up)
+                    DECLARE @rice INT = (SELECT Id FROM RestaurantCategories WHERE Name = 'RICE');
+                    DECLARE @dinner INT = (SELECT Id FROM RestaurantCategories WHERE Name = 'DINNER');
+                    DECLARE @curry INT = (SELECT Id FROM RestaurantCategories WHERE Name = 'CURRY');
+                    DECLARE @bev INT = (SELECT Id FROM RestaurantCategories WHERE Name = 'BEVERAGES');
+                    DECLARE @side INT = (SELECT Id FROM RestaurantCategories WHERE Name = 'SIDE DISHES');
+                    DECLARE @lunch INT = (SELECT Id FROM RestaurantCategories WHERE Name = 'LUNCH PACK');
+
+                    INSERT INTO RestaurantItems (Name, Price, RestaurantCategoryId) VALUES
+                    ('SET MENU', 550, @rice),
+                    ('VEGETABLE FRIED RICE', 400, @rice),
+                    ('EGG FRIED RICE', 300, @rice),
+                    ('CHICKEN FRIED RICE', 450, @rice),
+                    ('FISH FRIED RICE', 440, @rice),
+                    ('VEGETABLE BIRIYANI', 350, @rice),
+                    ('CHICKEN BIRIYANI', 550, @rice),
+                    ('EGG BIRIYANI', 450, @rice),
+                    ('FISH BIRIYANI', 540, @rice),
+                    ('PRAWN FRIED RICE', 580, @rice),
+                    ('CUTTLE FISH FRIED RICE', 580, @rice),
+                    ('CUTTLE FISH SET MENU', 750, @rice),
+                    ('PRAWN SET MENU', 750, @rice),
+
+                    ('PARATA', 60, @dinner),
+                    ('PLAIN HOPPERS', 50, @dinner),
+                    ('HONEY HOPPERS', 80, @dinner),
+                    ('EGG HOPPERS', 110, @dinner),
+                    ('MILK HOPPERS', 80, @dinner),
+                    ('PILAU CHICKEN', 450, @dinner),
+                    ('HOPPERS MEAL', 280, @dinner),
+                    ('PILAU EGG', 300, @dinner),
+                    ('POL ROTTY WITH LUNUMIRIS', 230, @dinner),
+                    ('EGG ROTTY', 120, @dinner),
+                    ('CHICKEN KOTTU', 550, @dinner),
+                    ('FISH KOTTU', 530, @dinner),
+                    ('EGG KOTTU', 480, @dinner),
+                    ('VEGETABLE KOTTU', 400, @dinner),
+                    ('CHEESE CHICKEN KOTTU', 1050, @dinner),
+                    ('CHEESE KOTTU', 800, @dinner),
+                    ('POL ROTTY SET', 230, @dinner),
+                    ('ROTTY WITH CURRY', 200, @dinner),
+                    ('STRING HOPPERS 10', 150, @dinner),
+                    ('EGG NOODLES', 300, @dinner),
+                    ('CHICKEN NOODLES', 450, @dinner),
+                    ('FISH NOODLES', 440, @dinner),
+
+                    ('POTATO CURRY', 100, @curry),
+                    ('FISH CURRY', 250, @curry),
+                    ('CHICKEN CURRY', 270, @curry),
+                    ('KADALA CURRY', 150, @curry),
+                    ('DHAL CURRY', 100, @curry),
+
+                    ('VEGETABLE SOUP', 180, @bev),
+                    ('VEG SOUP TAKE AWAY', 200, @bev),
+
+                    ('LUNUMIRIS', 50, @side),
+                    ('POL SAMBOL', 50, @side),
+                    ('BOILED EGG', 100, @side),
+                    ('VEGETABLE CHOPSUEY', 200, @side),
+                    ('VEGETABLE KHORMA', 180, @side),
+                    ('DEVILLED POTATO', 180, @side),
+                    ('DEVILLED CHICKEN', 300, @side),
+                    ('DEVILLED FISH', 380, @side),
+                    ('DEVILLED PRAWN', 400, @side),
+                    ('DEVILLED CUTTLEFISH', 380, @side),
+                    ('TANDOORI CHICKEN', 380, @side),
+                    ('MUSHROOM', 200, @side),
+                    ('CHICKEN WINGS', 300, @side),
+                    ('BRINJAL MOJU', 180, @side),
+
+                    ('SAMBA CHICKEN', 380, @lunch),
+                    ('SAMBA FISH', 370, @lunch),
+                    ('SAMBA VEGETABLE', 350, @lunch),
+                    ('RED RICE CHICKEN', 380, @lunch),
+                    ('RED RICE FISH', 370, @lunch),
+                    ('RED RICE VEGETABLE', 350, @lunch),
+                    ('YELLOW RICE', 450, @lunch),
+                    ('LAMPRAIS', 700, @lunch);
+                ");
+            }
+            catch { }
         }
     }
 }

@@ -10,16 +10,18 @@
                FontSize="28" FontAttributes="Bold" TextColor="#1A237E"/>
 
         <!-- Date Filters -->
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="10">
-            <Label Text="From:" VerticalOptions="Center"/>
-            <DatePicker x:Name="FromDate" Grid.Column="1"/>
-            <Label Grid.Column="2" Text="To:" VerticalOptions="Center"/>
-            <DatePicker x:Name="ToDate" Grid.Column="3"/>
-            <Button Grid.Column="4" Text="Generate"
-                    BackgroundColor="#1A237E" TextColor="White"
-                    CornerRadius="8" HorizontalOptions="Start"
-                    Clicked="Generate_Clicked"/>
-        </Grid>
+        <Frame Grid.Row="1" BackgroundColor="White" Padding="12,10" CornerRadius="10" HasShadow="True">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12">
+                <Label Text="From:" VerticalOptions="Center" TextColor="#212121" FontSize="14" FontAttributes="Bold"/>
+                <DatePicker x:Name="FromDate" Grid.Column="1" TextColor="#212121" FontSize="14"/>
+                <Label Grid.Column="2" Text="To:" VerticalOptions="Center" TextColor="#212121" FontSize="14" FontAttributes="Bold"/>
+                <DatePicker x:Name="ToDate" Grid.Column="3" TextColor="#212121" FontSize="14"/>
+                <Button Grid.Column="4" Text="Generate Report"
+                        BackgroundColor="#1A237E" TextColor="White"
+                        CornerRadius="8" HeightRequest="40" FontSize="14"
+                        Clicked="Generate_Clicked"/>
+            </Grid>
+        </Frame>
 
         <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="15">
 

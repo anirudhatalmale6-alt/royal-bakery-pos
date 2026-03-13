@@ -25,16 +25,6 @@ public partial class DashboardPage : ContentPage
         {
             var db = new StockDbContext();
 
-            if (!_loaded)
-            {
-                _loaded = true;
-                await Task.Run(() =>
-                {
-                    db.Database.EnsureCreated();
-                    try { db.ApplyMigrations(); } catch { }
-                });
-            }
-
             DateLabel.Text = DateTime.Now.ToString("dddd, dd MMMM yyyy");
 
             var today = DateTime.Today;

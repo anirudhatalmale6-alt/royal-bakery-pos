@@ -1,10 +1,18 @@
-namespace RoyalBakeryAdmin;
+namespace RoyalBakeryRestaurant;
 
 public partial class App : Application
 {
     public static string DatabaseServer { get; set; } = ".\\SQLEXPRESS";
     public static string DbUser { get; set; } = "";
     public static string DbPassword { get; set; } = "";
+    public static string LoggedInUserName { get; set; } = "";
+    public static int LoggedInUserId { get; set; }
+
+    /// <summary>
+    /// KOT printer name (separate thermal printer for kitchen orders).
+    /// Set via terminal.config: KOTPrinter=EPSON TM-T82 Receipt
+    /// </summary>
+    public static string KOTPrinterName { get; set; } = "";
 
     public App()
     {
@@ -12,7 +20,6 @@ public partial class App : Application
 
         LoadTerminalConfig();
 
-        // Build connection string
         if (!string.IsNullOrEmpty(DbUser))
         {
             RoyalBakeryCashier.Data.StockDbContext.ConnectionStringOverride =
@@ -26,7 +33,7 @@ public partial class App : Application
 
         MainPage = new NavigationPage(new Pages.LoginPage())
         {
-            BarBackgroundColor = Color.FromArgb("#1A1A2E"),
+            BarBackgroundColor = Color.FromArgb("#1A1A1A"),
             BarTextColor = Colors.White
         };
     }
@@ -57,6 +64,8 @@ public partial class App : Application
                         DbUser = val;
                     else if (key.Equals("DbPassword", StringComparison.OrdinalIgnoreCase))
                         DbPassword = val;
+                    else if (key.Equals("KOTPrinter", StringComparison.OrdinalIgnoreCase))
+                        KOTPrinterName = val;
                 }
             }
         }

@@ -1,0 +1,6 @@
+Mode=Restaurant
+Name=Restaurant 1
+Server=192.168.1.100\SQLEXPRESS
+DbUser=RoyalBakery
+DbPassword=Royal@2026
+KOTPrinter=EPSON TM-T82 Receipt

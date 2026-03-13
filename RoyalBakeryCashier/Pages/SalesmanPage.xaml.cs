@@ -195,12 +195,17 @@ public partial class SalesmanPage : ContentPage
         }
     }
 
-    private void AddToCart(ItemViewModel menuItem, int qty)
+    private async void AddToCart(ItemViewModel menuItem, int qty)
     {
         if (qty <= 0) return;
 
         int available = menuItem.AvailableStock;
-        if (available <= 0) return;
+        if (available <= 0)
+        {
+            await DisplayAlert("Out of Stock",
+                $"\"{menuItem.Name}\" has no stock available.", "OK");
+            return;
+        }
         if (qty > available) qty = available;
 
         var existing = _cartItems.FirstOrDefault(c => c.MenuItemId == menuItem.MenuItemId);
@@ -366,11 +371,7 @@ public partial class SalesmanPage : ContentPage
         // Print sales order slip with QR code
         await PrintOrderSlip(salesOrder, itemNames);
 
-        await DisplayAlert("Order Created",
-            $"{orderNumber} created — {_cartItems.Count} items, Rs. {salesOrder.TotalAmount:N2}\n\nGive the printed slip to the customer for payment at the cashier.",
-            "OK");
-
-        // Clear cart for next order
+        // Silent after order — no popup, just clear and ready for next order
         _cartItems.Clear(); // ObservableCollection auto-notifies UI
         CustomerNameEntry.Text = string.Empty;
         UpdateTotal();

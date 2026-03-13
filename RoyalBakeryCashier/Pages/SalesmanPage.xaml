@@ -100,7 +100,8 @@
 
                         <CollectionView x:Name="ItemsCollectionView"
                                         SelectionMode="Single"
-                                        SelectionChanged="ItemsCollectionView_SelectionChanged">
+                                        SelectionChanged="ItemsCollectionView_SelectionChanged"
+                                        ItemsUpdatingScrollMode="KeepScrollOffset">
 
                             <CollectionView.ItemsLayout>
                                 <GridItemsLayout Orientation="Vertical"
@@ -134,6 +135,11 @@
                                                    FontSize="12"
                                                    FontAttributes="Bold"
                                                    TextColor="{StaticResource TotalHighlight}"
+                                                   HorizontalTextAlignment="Center"/>
+
+                                            <Label Text="{Binding AvailableStock, StringFormat='Qty: {0}'}"
+                                                   FontSize="10"
+                                                   TextColor="{StaticResource Gray300}"
                                                    HorizontalTextAlignment="Center"/>
 
                                         </VerticalStackLayout>
@@ -171,7 +177,8 @@
                 <!-- Cart fills available space and scrolls -->
                 <CollectionView Grid.Row="1"
                                 x:Name="CartCollectionView"
-                                VerticalOptions="FillAndExpand">
+                                VerticalOptions="FillAndExpand"
+                                ItemsUpdatingScrollMode="KeepScrollOffset">
 
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
