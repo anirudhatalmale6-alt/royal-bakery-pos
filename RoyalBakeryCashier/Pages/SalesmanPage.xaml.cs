@@ -16,6 +16,7 @@ public partial class SalesmanPage : ContentPage
     private ObservableCollection<CartItem> _cartItems;
 
     private bool _loaded = false;
+    private CancellationTokenSource? _searchDebounce;
 
     public SalesmanPage()
     {
@@ -153,6 +154,7 @@ public partial class SalesmanPage : ContentPage
 
     private void ItemSearchEntry_TextChanged(object sender, TextChangedEventArgs e)
     {
+        _searchDebounce?.Cancel();
         var keyword = (e.NewTextValue ?? "").Trim();
         if (string.IsNullOrEmpty(keyword))
         {
@@ -160,11 +162,19 @@ public partial class SalesmanPage : ContentPage
             return;
         }
 
-        var filtered = _allItems
-            .Where(i => i.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+        _searchDebounce = new CancellationTokenSource();
+        var token = _searchDebounce.Token;
+        Task.Delay(150, token).ContinueWith(t =>
+        {
+            if (!t.IsCanceled)
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    var filtered = _allItems
+                        .Where(i => i.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+                });
+        });
     }
 
     private void FilterItemsWithoutClearingSearch(int? categoryId)
@@ -515,6 +525,12 @@ public partial class SalesmanPage : ContentPage
             BarBackgroundColor = Color.FromArgb("#1A1A1A"),
             BarTextColor = Colors.White
         });
+    }
+
+    private void RefreshItems_Clicked(object sender, EventArgs e)
+    {
+        _dbContext.ChangeTracker.Clear();
+        LoadItems();
     }
 
     private void UpdateTotal() => TotalLabel.Text = $"Total: Rs. {_cartItems.Sum(c => c.Total):F2}";

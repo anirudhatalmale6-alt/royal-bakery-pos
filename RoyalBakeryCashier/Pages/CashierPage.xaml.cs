@@ -17,6 +17,7 @@ namespace RoyalBakeryCashier.Pages
 
         private bool _loaded = false;
         private int? _loadedSalesOrderId = null; // Track loaded SalesOrder for completion
+        private CancellationTokenSource? _searchDebounce;
 
         public CashierPage()
         {
@@ -234,14 +235,14 @@ namespace RoyalBakeryCashier.Pages
         private void SalesOrderEntry_TextChanged(object sender, TextChangedEventArgs e)
         {
             // Barcode scanners type characters rapidly then may or may not send Enter.
-            // Debounce: if text stops changing for 400ms and length >= 3, auto-load.
+            // Debounce: if text stops changing for 200ms and length >= 3, auto-load.
             _scanDebounce?.Cancel();
             var text = (e.NewTextValue ?? "").Trim();
             if (text.Length < 3) return;
 
             _scanDebounce = new CancellationTokenSource();
             var token = _scanDebounce.Token;
-            Task.Delay(400, token).ContinueWith(t =>
+            Task.Delay(200, token).ContinueWith(t =>
             {
                 if (!t.IsCanceled)
                     MainThread.BeginInvokeOnMainThread(() => LoadSalesOrderFromSearch());
@@ -263,16 +264,14 @@ namespace RoyalBakeryCashier.Pages
         private async void LoadSalesOrderFromSearch()
         {
             var searchText = (SalesOrderEntry.Text ?? "").Trim();
-            if (string.IsNullOrEmpty(searchText)) return; // silent — no popup for empty
+            if (string.IsNullOrEmpty(searchText)) return;
 
-            // Always clear the entry first (erase previous QR code)
             SalesOrderEntry.Text = string.Empty;
 
-            // Clear EF cache so we always get fresh status from DB
-            _dbContext.ChangeTracker.Clear();
-
-            // Search by exact SalesOrderNumber or by Id
-            var salesOrder = _dbContext.SalesOrders
+            // Use separate context with AsNoTracking for faster query
+            using var db = new StockDbContext();
+            var salesOrder = db.SalesOrders
+                .AsNoTracking()
                 .Include(so => so.Items)
                 .ThenInclude(i => i.MenuItem)
                 .FirstOrDefault(so => so.SalesOrderNumber == searchText
@@ -280,14 +279,12 @@ namespace RoyalBakeryCashier.Pages
 
             if (salesOrder == null)
             {
-                // Silent — don't show popup for not found
                 SalesOrderEntry.Focus();
                 return;
             }
 
             if (salesOrder.Status == 1)
             {
-                // KEEP this popup — client specifically requested it
                 await DisplayAlert("Bill Already Completed",
                     $"Sales Order {salesOrder.SalesOrderNumber} has already been billed and completed.", "OK");
                 SalesOrderEntry.Focus();
@@ -301,18 +298,15 @@ namespace RoyalBakeryCashier.Pages
                 return;
             }
 
-            // Clear current cart and load sales order items
+            // Clear cart and populate from sales order — reuse cached _allItems
             _cartItems.Clear();
-            LoadItems(); // refresh stock
 
             foreach (var item in salesOrder.Items)
             {
                 var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
                 if (menuItem == null) continue;
 
-                int qtyToAdd = item.Quantity;
-                if (qtyToAdd > menuItem.AvailableStock)
-                    qtyToAdd = menuItem.AvailableStock; // silently cap to available
+                int qtyToAdd = Math.Min(item.Quantity, menuItem.AvailableStock);
                 if (qtyToAdd <= 0) continue;
 
                 _cartItems.Add(new CartItem
@@ -328,7 +322,7 @@ namespace RoyalBakeryCashier.Pages
 
             _loadedSalesOrderId = salesOrder.Id;
             UpdateTotal();
-            SalesOrderEntry.Focus(); // Keep focus on scanner entry
+            SalesOrderEntry.Focus();
         }
 
         private void LoadItems()
@@ -371,20 +365,27 @@ namespace RoyalBakeryCashier.Pages
 
         private void ItemSearchEntry_TextChanged(object sender, TextChangedEventArgs e)
         {
+            _searchDebounce?.Cancel();
             var keyword = (e.NewTextValue ?? "").Trim();
             if (string.IsNullOrEmpty(keyword))
             {
-                // Show current category when search is cleared
                 FilterItemsWithoutClearingSearch(_currentCategoryId);
                 return;
             }
 
-            // Search across ALL items regardless of category
-            var filtered = _allItems
-                .Where(i => i.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+            _searchDebounce = new CancellationTokenSource();
+            var token = _searchDebounce.Token;
+            Task.Delay(150, token).ContinueWith(t =>
+            {
+                if (!t.IsCanceled)
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        var filtered = _allItems
+                            .Where(i => i.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+                        ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+                    });
+            });
         }
 
         private void FilterItemsWithoutClearingSearch(int? categoryId)
@@ -484,39 +485,26 @@ namespace RoyalBakeryCashier.Pages
 
         private async void PlaceOrder_Clicked(object sender, EventArgs e)
         {
-            if (!_cartItems.Any()) return; // silent — no popup for empty cart
+            if (!_cartItems.Any()) return;
 
-            try
+            var cartData = _cartItems.Select(c => new PaymentPage.PaymentCartItem
             {
-                var order = new Order
-                {
-                    DateTime = DateTime.Now,
-                    Status = 0,
-                    TotalAmount = _cartItems.Sum(c => c.Total),
-                    Items = _cartItems.Select(c => new OrderItem
-                    {
-                        MenuItemId = c.MenuItemId,
-                        Quantity = c.Quantity,
-                        PricePerItem = c.Price,
-                        TotalPrice = c.Total,
-                        MenuItem = null
-                    }).ToList()
-                };
+                MenuItemId = c.MenuItemId,
+                Name = c.Name,
+                Quantity = c.Quantity,
+                Price = c.Price,
+                Total = c.Total
+            }).ToList();
 
-                _dbContext.Orders.Add(order);
-                await _dbContext.SaveChangesAsync();
+            decimal total = _cartItems.Sum(c => c.Total);
 
-                await Navigation.PushModalAsync(new NavigationPage(new PaymentPage(order.Id, _loadedSalesOrderId))
-                {
-                    BarBackgroundColor = Color.FromArgb("#1A1A1A"),
-                    BarTextColor = Colors.White
-                });
-                _loadedSalesOrderId = null;
-            }
-            catch (Exception ex)
+            await Navigation.PushModalAsync(new NavigationPage(
+                new PaymentPage(total, cartData, _loadedSalesOrderId))
             {
-                await DisplayAlert("Error", $"Could not place order.\n\n{ex.InnerException?.Message ?? ex.Message}", "OK");
-            }
+                BarBackgroundColor = Color.FromArgb("#1A1A1A"),
+                BarTextColor = Colors.White
+            });
+            _loadedSalesOrderId = null;
         }
 
         private async void CartItemName_Tapped(object sender, TappedEventArgs e)
@@ -591,6 +579,12 @@ namespace RoyalBakeryCashier.Pages
 
                 UpdateTotal();
             }
+        }
+
+        private void RefreshItems_Clicked(object sender, EventArgs e)
+        {
+            _dbContext.ChangeTracker.Clear();
+            LoadItems();
         }
 
         private void UpdateTotal() => TotalLabel.Text = $"Total: Rs. {_cartItems.Sum(c => c.Total):F2}";

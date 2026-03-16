@@ -49,7 +49,7 @@
                 <Frame BackgroundColor="{StaticResource CardBg}" Padding="8" CornerRadius="10"
                        BorderColor="{StaticResource Gray600}">
                     <VerticalStackLayout Spacing="6">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
                             <Label Text="Items" FontSize="14" FontAttributes="Bold" TextColor="White"
                                    VerticalOptions="Center"/>
                             <Frame Grid.Column="1" BackgroundColor="{StaticResource InputBg}"
@@ -61,6 +61,10 @@
                                        BackgroundColor="Transparent"
                                        TextChanged="ItemSearchEntry_TextChanged"/>
                             </Frame>
+                            <Button Grid.Column="2" Text="Refresh"
+                                    FontSize="11" HeightRequest="32" Padding="10,0"
+                                    CornerRadius="8" BackgroundColor="#2196F3" TextColor="White"
+                                    Clicked="RefreshItems_Clicked"/>
                         </Grid>
 
                         <CollectionView x:Name="ItemsCollectionView" SelectionMode="Single"

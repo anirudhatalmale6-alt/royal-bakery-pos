@@ -60,47 +60,43 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.21.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.21.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.21.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.21.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.21.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.22.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.22.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.22.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.22.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.22.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.21
-          name: v1.21 - Restaurant Payment + GRN Fix + Admin Search
+          tag_name: v1.22
+          name: v1.22 - Performance Optimization
           body: |
-            ## Changes in v1.21
+            ## Changes in v1.22 - Performance Optimization
 
-            ### Restaurant POS
-            - **ADDED**: Cash/Card payment popup (same as Cashier) — replaces direct sale
-            - Payment page with numpad, cash/card tabs, balance/change display
-            - Invoice receipt now includes Cash/Card/Change breakdown
+            ### All POS Terminals (Cashier, Salesman, Restaurant)
+            - **FASTER SEARCH**: 150ms debounce on item search — eliminates lag from rapid typing
+            - **REFRESH BUTTON**: New "Refresh" button next to search to reload stock quantities on demand
 
-            ### GRN Stock Clearance Fix
-            - **FIXED**: Explicit Update() calls on Stock and GRNItems entities during clearance
-            - Ensures CurrentQuantity deduction is properly persisted by EF Core
-
-            ### Admin Panel Enhancements
-            - **ADDED**: Search on every page (Categories, Sales Report, GRN Report, Clearance Report)
-            - **IMPROVED**: Quick Category selection now uses dropdown (None/Quick 1/Quick 2) instead of number input
-            - **NEW**: Restaurant Products management page (add, edit, delete restaurant items)
-            - **NEW**: Restaurant Categories management page (add, edit, delete restaurant categories)
+            ### Cashier System
+            - **INSTANT PAYMENT POPUP**: Payment page opens immediately — no intermediate DB write
+            - **INSTANT CANCEL**: Cancel payment closes instantly — no DB cleanup needed
+            - **FASTER QR SCAN**: Reduced debounce from 400ms to 200ms, uses separate read-only DB context
+            - **FASTER QR LOADING**: Reuses cached item data — eliminates redundant full stock reload
+            - **LEANER CONFIRM**: Single DB transaction (stock deduct + sale create) — no Order entity overhead
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.21.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.21.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.21.zip** — API server
-            - **RoyalBakeryAdmin-v1.21.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.21.zip** — Restaurant POS terminal EXE (NEW)
+            - **RoyalBakeryCashier-v1.22.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.22.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.22.zip** — API server
+            - **RoyalBakeryAdmin-v1.22.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.22.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.21.zip
-            RoyalBakerySalesman-v1.21.zip
-            RoyalBakeryAPI-v1.21.zip
-            RoyalBakeryAdmin-v1.21.zip
-            RoyalBakeryRestaurant-v1.21.zip
+            RoyalBakeryCashier-v1.22.zip
+            RoyalBakerySalesman-v1.22.zip
+            RoyalBakeryAPI-v1.22.zip
+            RoyalBakeryAdmin-v1.22.zip
+            RoyalBakeryRestaurant-v1.22.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

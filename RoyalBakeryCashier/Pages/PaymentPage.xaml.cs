@@ -9,56 +9,34 @@ namespace RoyalBakeryCashier.Pages;
 public partial class PaymentPage : ContentPage
 {
     private readonly StockDbContext _db;
-    private Order _order;
-    private decimal _total;
-    private readonly int _orderId;
+    private readonly decimal _total;
+    private readonly List<PaymentCartItem> _cartItems;
     private readonly int? _salesOrderId;
 
     private Entry _activeEntry;
-    private bool _loaded = false;
 
-    public PaymentPage(int orderId, int? salesOrderId = null)
+    public PaymentPage(decimal total, List<PaymentCartItem> cartItems, int? salesOrderId = null)
     {
         InitializeComponent();
         _db = new StockDbContext();
-        _orderId = orderId;
+        _total = total;
+        _cartItems = cartItems;
         _salesOrderId = salesOrderId;
+
+        TotalLabel.Text = $"Rs. {_total:N2}";
+        CashEntry.Text = ((int)_total).ToString();
+        CardEntry.Text = "0";
 
         CashEntry.Focused += (s, e) => SetActiveEntry(CashEntry);
         CardEntry.Focused += (s, e) => SetActiveEntry(CardEntry);
         _activeEntry = CashEntry;
-    }
 
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-        if (_loaded) return;
-        _loaded = true;
-
-        try
-        {
-            _order = await Task.Run(() => _db.Orders
-                .Include(o => o.Items)
-                .ThenInclude(i => i.MenuItem)
-                .First(o => o.Id == _orderId));
-
-            _total = _order.TotalAmount;
-            TotalLabel.Text = $"Rs. {_total:N2}";
-            CashEntry.Text = ((int)_total).ToString();
-            CardEntry.Text = "0";
-            UpdateBalance();
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlert("Error", $"Could not load order.\n\n{ex.Message}", "OK");
-            await Navigation.PopModalAsync();
-        }
+        UpdateBalance();
     }
 
     private void SetActiveEntry(Entry entry)
     {
         _activeEntry = entry;
-        // Highlight the active tab
         CashTabBtn.BackgroundColor = entry == CashEntry
             ? Color.FromArgb("#2196F3")
             : Color.FromArgb("#404040");
@@ -93,7 +71,6 @@ public partial class PaymentPage : ContentPage
 
         if (remaining > 0)
         {
-            // Still owes money
             BalanceFrame.IsVisible = true;
             ChangeFrame.IsVisible = false;
             BalanceLabel.Text = $"Rs. {remaining:N2}";
@@ -104,7 +81,6 @@ public partial class PaymentPage : ContentPage
         }
         else if (remaining == 0)
         {
-            // Exact payment
             BalanceFrame.IsVisible = true;
             ChangeFrame.IsVisible = false;
             BalanceLabel.Text = "Rs. 0.00";
@@ -115,7 +91,6 @@ public partial class PaymentPage : ContentPage
         }
         else
         {
-            // Overpaid — show change
             BalanceFrame.IsVisible = false;
             ChangeFrame.IsVisible = true;
             ChangeLabel.Text = $"Rs. {Math.Abs(remaining):N2}";
@@ -144,15 +119,6 @@ public partial class PaymentPage : ContentPage
 
     private async void Cancel_Clicked(object sender, EventArgs e)
     {
-        // Delete the pending order so the cashier can go back and modify the cart
-        try
-        {
-            _db.OrderItems.RemoveRange(_order.Items);
-            _db.Orders.Remove(_order);
-            await _db.SaveChangesAsync();
-        }
-        catch { /* best effort cleanup */ }
-
         await Navigation.PopModalAsync();
     }
 
@@ -172,7 +138,6 @@ public partial class PaymentPage : ContentPage
 
         Sale sale = null;
 
-        // Use execution strategy to wrap the transaction (required with EnableRetryOnFailure)
         var strategy = _db.Database.CreateExecutionStrategy();
         try
         {
@@ -181,10 +146,13 @@ public partial class PaymentPage : ContentPage
                 using var tx = await _db.Database.BeginTransactionAsync();
 
                 // 1. Deduct stock and GRN
-                DeductStock(_order);
-                DeductGRNForOrder(_order);
+                DeductStock();
+                DeductGRN();
 
-                // 2. Create Sale record in Sales table
+                // 2. Generate invoice number
+                int nextNum = (_db.Sales.Any() ? _db.Sales.Max(s => s.Id) : 0) + 1;
+
+                // 3. Create Sale record
                 sale = new Sale
                 {
                     DateTime = DateTime.Now,
@@ -192,32 +160,26 @@ public partial class PaymentPage : ContentPage
                     CashAmount = cash,
                     CardAmount = card,
                     ChangeGiven = change,
-                    InvoiceNumber = $"INV-{_order.Id:D5}",
+                    InvoiceNumber = $"INV-{nextNum:D5}",
                     CashierName = string.IsNullOrEmpty(App.LoggedInUserName) ? "Cashier" : App.LoggedInUserName,
-                    Items = _order.Items.Select(i => new SaleItem
+                    Items = _cartItems.Select(i => new SaleItem
                     {
                         MenuItemId = i.MenuItemId,
-                        ItemName = i.MenuItem?.Name ?? "Unknown",
+                        ItemName = i.Name,
                         Quantity = i.Quantity,
-                        PricePerItem = i.PricePerItem,
-                        TotalPrice = i.TotalPrice
+                        PricePerItem = i.Price,
+                        TotalPrice = i.Total
                     }).ToList()
                 };
                 _db.Sales.Add(sale);
 
-                // 3. Mark SalesOrder as paid (if loaded from QR scan)
+                // 4. Mark SalesOrder as paid (if loaded from QR scan)
                 if (_salesOrderId.HasValue)
                 {
                     var salesOrder = _db.SalesOrders.Find(_salesOrderId.Value);
                     if (salesOrder != null)
-                        salesOrder.Status = 1; // Paid — QR won't work again
+                        salesOrder.Status = 1; // Paid
                 }
-
-                // 4. Clear order data (order + items + payments)
-                var payments = _db.OrderPayments.Where(p => p.OrderId == _order.Id);
-                _db.OrderPayments.RemoveRange(payments);
-                _db.OrderItems.RemoveRange(_order.Items);
-                _db.Orders.Remove(_order);
 
                 await _db.SaveChangesAsync();
                 await tx.CommitAsync();
@@ -227,7 +189,6 @@ public partial class PaymentPage : ContentPage
             if (sale != null)
                 await PrintToThermal(sale, cash, card, change);
 
-            // Close payment popup, go back to cashier
             await Navigation.PopModalAsync();
         }
         catch (DbUpdateException dbEx)
@@ -241,18 +202,18 @@ public partial class PaymentPage : ContentPage
         }
     }
 
-    private void DeductStock(Order order)
+    private void DeductStock()
     {
-        foreach (var item in order.Items)
+        foreach (var item in _cartItems)
         {
             var stock = _db.Stocks.First(s => s.MenuItemId == item.MenuItemId);
             stock.Quantity -= item.Quantity;
         }
     }
 
-    private void DeductGRNForOrder(Order order)
+    private void DeductGRN()
     {
-        foreach (var item in order.Items)
+        foreach (var item in _cartItems)
             DeductFromGRN_FIFO(item.MenuItemId, item.Quantity);
     }
 
@@ -275,17 +236,12 @@ public partial class PaymentPage : ContentPage
             throw new Exception("Insufficient GRN stock");
     }
 
-    /// <summary>
-    /// Send receipt to 3-inch (80mm) Epson thermal printer using ESC/POS commands.
-    /// Uses printer-native center alignment for headers/footers (no space padding).
-    /// </summary>
     private async Task PrintToThermal(Sale sale, decimal cash, decimal card, decimal change)
     {
         const int W = 48;
         string Separator(char c = '-') => new string(c, W);
         string Row(string left, string right) => left + right.PadLeft(W - left.Length);
 
-        // Save receipt as text backup
         try
         {
             string receiptDir = Path.Combine(FileSystem.AppDataDirectory, "receipts");
@@ -298,7 +254,6 @@ public partial class PaymentPage : ContentPage
 
         try
         {
-            // Find the printer: check saved preference first, then auto-detect
             string printerName = Preferences.Get("ThermalPrinterName", "");
             if (string.IsNullOrEmpty(printerName))
             {
@@ -309,7 +264,6 @@ public partial class PaymentPage : ContentPage
 
             if (string.IsNullOrEmpty(printerName))
             {
-                // Show available printers so user knows what to pick
                 var printers = RawPrinterHelper.GetInstalledPrinters();
                 string msg = printers.Count > 0
                     ? $"No thermal printer detected.\n\nInstalled printers:\n{string.Join("\n", printers)}\n\nPlease set printer name in Settings."
@@ -329,7 +283,6 @@ public partial class PaymentPage : ContentPage
 
             Emit(init);
 
-            // Header — centered
             Emit(center);
             Emit(enc.GetBytes("The Royal Bakery\n"));
             Emit(enc.GetBytes("202, Galle Road, Colombo-06\n"));
@@ -337,7 +290,6 @@ public partial class PaymentPage : ContentPage
             Emit(enc.GetBytes("www.theroyalbakery.com\n"));
             Emit(enc.GetBytes(Separator('=') + "\n"));
 
-            // Body — left aligned
             Emit(left);
             Emit(enc.GetBytes(Row("Invoice #:", sale.InvoiceNumber) + "\n"));
             Emit(enc.GetBytes(Row("Date:", sale.DateTime.ToString("dd/MM/yyyy HH:mm")) + "\n"));
@@ -361,7 +313,6 @@ public partial class PaymentPage : ContentPage
             Emit(enc.GetBytes(Row("Change", $"Rs. {change:N2}") + "\n"));
             Emit(enc.GetBytes(Separator() + "\n"));
 
-            // Footer — centered
             Emit(center);
             Emit(enc.GetBytes("Thank you for your purchase!\n"));
             Emit(enc.GetBytes("Please come again\n"));
@@ -371,7 +322,6 @@ public partial class PaymentPage : ContentPage
 
             Emit(feedCut);
 
-            // Send raw bytes to printer via Windows Print Spooler API
             bool printed = RawPrinterHelper.SendBytesToPrinter(printerName, ms.ToArray());
             if (!printed)
             {
@@ -383,5 +333,14 @@ public partial class PaymentPage : ContentPage
         {
             await DisplayAlert("Print Error", $"Could not print: {ex.Message}", "OK");
         }
+    }
+
+    public class PaymentCartItem
+    {
+        public int MenuItemId { get; set; }
+        public string Name { get; set; } = "";
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
+        public decimal Total { get; set; }
     }
 }
