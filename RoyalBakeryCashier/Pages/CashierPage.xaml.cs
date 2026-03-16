@@ -25,6 +25,9 @@ namespace RoyalBakeryCashier.Pages
             _dbContext = new StockDbContext();
             _cartItems = new ObservableCollection<CartItem>();
             CartCollectionView.ItemsSource = _cartItems;
+
+            // QR scanner sends Enter after typing — intercept SO- prefix from any input
+            ItemSearchEntry.Completed += ItemSearchEntry_Completed;
         }
 
         protected override async void OnAppearing()
@@ -387,12 +390,40 @@ namespace RoyalBakeryCashier.Pages
                 if (!t.IsCanceled)
                     MainThread.BeginInvokeOnMainThread(() =>
                     {
+                        var text = (ItemSearchEntry.Text ?? "").Trim();
+                        // QR scanner typed into item search — redirect SO- prefix to order search
+                        if (text.Length >= 5 && text.StartsWith("SO-", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ItemSearchEntry.Text = string.Empty;
+                            _scanDebounce?.Cancel();
+                            SalesOrderEntry.Text = text;
+                            LoadSalesOrderFromSearch();
+                            return;
+                        }
+
                         var filtered = _allItems
-                            .Where(i => i.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                            .Where(i => i.Name.Contains(text, StringComparison.OrdinalIgnoreCase))
                             .ToList();
                         ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
                     });
             });
+        }
+
+        /// <summary>
+        /// Handles Enter key on ItemSearchEntry — QR scanners type characters then press Enter.
+        /// If text starts with SO-, redirect to sales order search.
+        /// </summary>
+        private void ItemSearchEntry_Completed(object sender, EventArgs e)
+        {
+            _searchDebounce?.Cancel();
+            var text = (ItemSearchEntry.Text ?? "").Trim();
+            if (text.Length >= 5 && text.StartsWith("SO-", StringComparison.OrdinalIgnoreCase))
+            {
+                ItemSearchEntry.Text = string.Empty;
+                _scanDebounce?.Cancel();
+                SalesOrderEntry.Text = text;
+                LoadSalesOrderFromSearch();
+            }
         }
 
         private void FilterItemsWithoutClearingSearch(int? categoryId)

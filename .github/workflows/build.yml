@@ -60,52 +60,37 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.24.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.24.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.24.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.24.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.24.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.25.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.25.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.25.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.25.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.25.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.24
-          name: v1.24 - Instant Payment Popup & Cancel Fix
+          tag_name: v1.25
+          name: v1.25 - QR Scanner Works From Any Input Field
           body: |
-            ## Changes in v1.24 - Instant Payment Popup & Cancel Fix
+            ## Changes in v1.25 - QR Scanner Works From Any Input Field
 
             ### Cashier System
-            - **INSTANT CANCEL**: Cancel button now closes payment popup instantly — no item reload, cart stays exactly as it was
-            - **INSTANT PAY BUTTON**: Payment popup opens instantly — DB connection deferred to Confirm only (no DB work on open)
-            - **ZERO-ANIMATION MODALS**: All popup open/close transitions disabled for instant response
-            - **BACKGROUND DB ON CONFIRM**: Sale creation, stock deduction, and GRN deduction all run on background thread — UI stays responsive
-            - **ASYNC DAILY REPORT**: Daily sales report query runs on background thread
-            - **ASYNC QR SCAN LOAD**: Sales order lookup runs on background thread
-
-            ### Restaurant System
-            - **INSTANT CANCEL**: Same fix — cancel keeps cart, no unnecessary clearing
-            - **INSTANT PAY BUTTON**: Same — no animation, background DB on confirm
-            - **BACKGROUND DB ON CONFIRM**: Restaurant sale creation runs on background thread
-
-            ### Salesman System
-            - **ASYNC ORDER CREATION**: Sales order number generation runs on background thread
-            - **ZERO-ANIMATION MODALS**: History popup opens instantly
-
-            ### Performance Target
-            - All user actions now respond in under 1 second on Celeron + 4GB RAM hardware
+            - **QR SCAN FROM ANY FIELD**: QR scanner now works regardless of which input field has focus — if scanner types a sales order number (SO-XXXXX) into the item search box, it is automatically detected and redirected to the order search
+            - **ENTER KEY DETECTION**: When scanner sends Enter key after typing into item search, SO- prefix is detected and order is loaded instantly
+            - **DEBOUNCE DETECTION**: Even without Enter key, the 150ms search debounce detects SO- prefix and redirects to order search
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.24.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.24.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.24.zip** — API server
-            - **RoyalBakeryAdmin-v1.24.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.24.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.25.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.25.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.25.zip** — API server
+            - **RoyalBakeryAdmin-v1.25.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.25.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.24.zip
-            RoyalBakerySalesman-v1.24.zip
-            RoyalBakeryAPI-v1.24.zip
-            RoyalBakeryAdmin-v1.24.zip
-            RoyalBakeryRestaurant-v1.24.zip
+            RoyalBakeryCashier-v1.25.zip
+            RoyalBakerySalesman-v1.25.zip
+            RoyalBakeryAPI-v1.25.zip
+            RoyalBakeryAdmin-v1.25.zip
+            RoyalBakeryRestaurant-v1.25.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
