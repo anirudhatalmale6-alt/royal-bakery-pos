@@ -31,8 +31,8 @@ public partial class RestaurantPage : ContentPage
 
         try
         {
-            LoadCategories();
-            LoadItems();
+            await LoadCategoriesAsync();
+            await LoadItemsAsync();
         }
         catch (Exception ex)
         {
@@ -51,9 +51,9 @@ public partial class RestaurantPage : ContentPage
         Color.FromArgb("#F44336"),
     };
 
-    private void LoadCategories()
+    private async Task LoadCategoriesAsync()
     {
-        var categories = _dbContext.RestaurantCategories.OrderBy(c => c.Id).ToList();
+        var categories = await Task.Run(() => _dbContext.RestaurantCategories.OrderBy(c => c.Id).ToList());
         CategoryGrid.Children.Clear();
         CategoryGrid.RowDefinitions.Clear();
 
@@ -90,19 +90,21 @@ public partial class RestaurantPage : ContentPage
         }
     }
 
-    private void LoadItems()
+    private async Task LoadItemsAsync()
     {
-        _allItems = _dbContext.RestaurantItems
-            .Include(ri => ri.Category)
-            .Select(ri => new ItemViewModel
-            {
-                RestaurantItemId = ri.Id,
-                Name = ri.Name,
-                Price = ri.Price,
-                RestaurantCategoryId = ri.RestaurantCategoryId,
-            })
-            .ToList();
+        var items = await Task.Run(() =>
+            _dbContext.RestaurantItems
+                .Include(ri => ri.Category)
+                .Select(ri => new ItemViewModel
+                {
+                    RestaurantItemId = ri.Id,
+                    Name = ri.Name,
+                    Price = ri.Price,
+                    RestaurantCategoryId = ri.RestaurantCategoryId,
+                })
+                .ToList());
 
+        _allItems = items;
         ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(_allItems);
     }
 
@@ -305,10 +307,10 @@ public partial class RestaurantPage : ContentPage
         });
     }
 
-    private void RefreshItems_Clicked(object sender, EventArgs e)
+    private async void RefreshItems_Clicked(object sender, EventArgs e)
     {
         _dbContext.ChangeTracker.Clear();
-        LoadItems();
+        await LoadItemsAsync();
     }
 
     private void UpdateTotal() => TotalLabel.Text = $"Total: Rs. {_cartItems.Sum(c => c.Total):F2}";

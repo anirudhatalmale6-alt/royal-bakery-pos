@@ -58,7 +58,7 @@ namespace RoyalBakeryCashier.Pages
                             catch { }
                         }
                     });
-                    LoadCategories();
+                    await LoadCategoriesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -71,7 +71,7 @@ namespace RoyalBakeryCashier.Pages
 
             // Always reload items and clear cart when page reappears (e.g., after payment modal closes)
             _cartItems.Clear(); // ObservableCollection auto-notifies UI
-            LoadItems();
+            await LoadItemsAsync();
             UpdateTotal();
 
             // Keep focus on the sales order entry for scanner input
@@ -95,9 +95,9 @@ namespace RoyalBakeryCashier.Pages
         private const int QUICK1_CATEGORY_ID = -1;
         private const int QUICK2_CATEGORY_ID = -2;
 
-        private void LoadCategories()
+        private async Task LoadCategoriesAsync()
         {
-            var categories = _dbContext.MenuCategories.ToList();
+            var categories = await Task.Run(() => _dbContext.MenuCategories.ToList());
             CategoryGrid.Children.Clear();
             CategoryGrid.RowDefinitions.Clear();
 
@@ -325,22 +325,24 @@ namespace RoyalBakeryCashier.Pages
             SalesOrderEntry.Focus();
         }
 
-        private void LoadItems()
+        private async Task LoadItemsAsync()
         {
-            _allItems = _dbContext.Stocks
-                .Include(s => s.MenuItem)
-                .Select(s => new ItemViewModel
-                {
-                    MenuItemId = s.MenuItemId,
-                    Name = s.MenuItem.Name,
-                    Price = s.MenuItem.Price,
-                    AvailableStock = s.Quantity,
-                    MenuCategoryId = s.MenuItem.MenuCategoryId,
-                    QuickCategory = s.MenuItem.QuickCategory,
-                    IsQuick = s.MenuItem.IsQuick
-                })
-                .ToList();
+            var items = await Task.Run(() =>
+                _dbContext.Stocks
+                    .Include(s => s.MenuItem)
+                    .Select(s => new ItemViewModel
+                    {
+                        MenuItemId = s.MenuItemId,
+                        Name = s.MenuItem.Name,
+                        Price = s.MenuItem.Price,
+                        AvailableStock = s.Quantity,
+                        MenuCategoryId = s.MenuItem.MenuCategoryId,
+                        QuickCategory = s.MenuItem.QuickCategory,
+                        IsQuick = s.MenuItem.IsQuick
+                    })
+                    .ToList());
 
+            _allItems = items;
             ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(_allItems);
         }
 
@@ -581,10 +583,10 @@ namespace RoyalBakeryCashier.Pages
             }
         }
 
-        private void RefreshItems_Clicked(object sender, EventArgs e)
+        private async void RefreshItems_Clicked(object sender, EventArgs e)
         {
             _dbContext.ChangeTracker.Clear();
-            LoadItems();
+            await LoadItemsAsync();
         }
 
         private void UpdateTotal() => TotalLabel.Text = $"Total: Rs. {_cartItems.Sum(c => c.Total):F2}";
