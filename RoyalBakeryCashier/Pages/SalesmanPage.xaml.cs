@@ -347,8 +347,9 @@ public partial class SalesmanPage : ContentPage
     {
         if (!_cartItems.Any()) return; // silent — no popup for empty cart
 
-        // Generate sales order number
-        var lastOrder = _dbContext.SalesOrders.OrderByDescending(so => so.Id).FirstOrDefault();
+        // Generate sales order number (async to avoid UI freeze on Celeron)
+        var lastOrder = await Task.Run(() =>
+            _dbContext.SalesOrders.OrderByDescending(so => so.Id).FirstOrDefault());
         int nextNum = (lastOrder?.Id ?? 0) + 1;
         string orderNumber = $"SO-{nextNum:D5}";
 
@@ -526,7 +527,7 @@ public partial class SalesmanPage : ContentPage
         {
             BarBackgroundColor = Color.FromArgb("#1A1A1A"),
             BarTextColor = Colors.White
-        });
+        }, false);
     }
 
     private async void RefreshItems_Clicked(object sender, EventArgs e)

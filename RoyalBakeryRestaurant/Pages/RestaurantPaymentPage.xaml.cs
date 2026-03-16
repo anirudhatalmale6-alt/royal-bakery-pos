@@ -15,6 +15,9 @@ public partial class RestaurantPaymentPage : ContentPage
 
     private Entry _activeEntry;
 
+    /// <summary>Flag checked by RestaurantPage to know if payment was completed or cancelled.</summary>
+    public static bool LastPaymentCompleted { get; set; }
+
     public RestaurantPaymentPage(decimal total, List<CartItemData> cartItems, string orderSource, string cashierName)
     {
         InitializeComponent();
@@ -119,7 +122,7 @@ public partial class RestaurantPaymentPage : ContentPage
 
     private async void Cancel_Clicked(object sender, EventArgs e)
     {
-        await Navigation.PopModalAsync();
+        await Navigation.PopModalAsync(false); // no animation = instant close
     }
 
     private async void Confirm_Clicked(object sender, EventArgs e)
@@ -138,41 +141,45 @@ public partial class RestaurantPaymentPage : ContentPage
 
         RestaurantSale sale = null;
 
-        var db = new StockDbContext();
-        var strategy = db.Database.CreateExecutionStrategy();
-
         try
         {
-            await strategy.ExecuteAsync(async () =>
+            // Run entire DB operation on background thread to keep UI responsive
+            sale = await Task.Run(async () =>
             {
-                // Generate invoice number
-                var lastSale = db.RestaurantSales
-                    .OrderByDescending(s => s.Id).FirstOrDefault();
-                int nextNum = (lastSale?.Id ?? 0) + 1;
-                string invoiceNumber = $"RES-{nextNum:D5}";
-
-                sale = new RestaurantSale
+                var db = new StockDbContext();
+                var strategy = db.Database.CreateExecutionStrategy();
+                RestaurantSale s = null;
+                await strategy.ExecuteAsync(async () =>
                 {
-                    InvoiceNumber = invoiceNumber,
-                    DateTime = DateTime.Now,
-                    TotalAmount = _total,
-                    CashAmount = cash,
-                    CardAmount = card,
-                    ChangeGiven = change,
-                    CashierName = _cashierName,
-                    OrderSource = _orderSource,
-                    Items = _cartItems.Select(ci => new RestaurantSaleItem
-                    {
-                        RestaurantItemId = ci.RestaurantItemId,
-                        ItemName = ci.Name,
-                        Quantity = ci.Quantity,
-                        PricePerItem = ci.Price,
-                        TotalPrice = ci.Total
-                    }).ToList()
-                };
+                    var lastSale = db.RestaurantSales
+                        .OrderByDescending(x => x.Id).FirstOrDefault();
+                    int nextNum = (lastSale?.Id ?? 0) + 1;
+                    string invoiceNumber = $"RES-{nextNum:D5}";
 
-                db.RestaurantSales.Add(sale);
-                await db.SaveChangesAsync();
+                    s = new RestaurantSale
+                    {
+                        InvoiceNumber = invoiceNumber,
+                        DateTime = DateTime.Now,
+                        TotalAmount = _total,
+                        CashAmount = cash,
+                        CardAmount = card,
+                        ChangeGiven = change,
+                        CashierName = _cashierName,
+                        OrderSource = _orderSource,
+                        Items = _cartItems.Select(ci => new RestaurantSaleItem
+                        {
+                            RestaurantItemId = ci.RestaurantItemId,
+                            ItemName = ci.Name,
+                            Quantity = ci.Quantity,
+                            PricePerItem = ci.Price,
+                            TotalPrice = ci.Total
+                        }).ToList()
+                    };
+
+                    db.RestaurantSales.Add(s);
+                    await db.SaveChangesAsync();
+                });
+                return s;
             });
 
             // Print invoice (outside strategy)
@@ -183,7 +190,8 @@ public partial class RestaurantPaymentPage : ContentPage
             if (sale != null && (_orderSource == "Pickme Food" || _orderSource == "Ubereats"))
                 await PrintKOT(sale);
 
-            await Navigation.PopModalAsync();
+            LastPaymentCompleted = true;
+            await Navigation.PopModalAsync(false); // no animation
         }
         catch (DbUpdateException dbEx)
         {

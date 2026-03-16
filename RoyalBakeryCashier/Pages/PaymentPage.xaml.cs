@@ -8,17 +8,19 @@ namespace RoyalBakeryCashier.Pages;
 
 public partial class PaymentPage : ContentPage
 {
-    private readonly StockDbContext _db;
+    private StockDbContext _db; // created lazily in Confirm only
     private readonly decimal _total;
     private readonly List<PaymentCartItem> _cartItems;
     private readonly int? _salesOrderId;
 
     private Entry _activeEntry;
 
+    /// <summary>Flag checked by CashierPage to know if payment was completed or cancelled.</summary>
+    public static bool LastPaymentCompleted { get; set; }
+
     public PaymentPage(decimal total, List<PaymentCartItem> cartItems, int? salesOrderId = null)
     {
         InitializeComponent();
-        _db = new StockDbContext();
         _total = total;
         _cartItems = cartItems;
         _salesOrderId = salesOrderId;
@@ -119,7 +121,7 @@ public partial class PaymentPage : ContentPage
 
     private async void Cancel_Clicked(object sender, EventArgs e)
     {
-        await Navigation.PopModalAsync();
+        await Navigation.PopModalAsync(false); // no animation = instant close
     }
 
     private async void Confirm_Clicked(object sender, EventArgs e)
@@ -138,58 +140,66 @@ public partial class PaymentPage : ContentPage
 
         Sale sale = null;
 
-        var strategy = _db.Database.CreateExecutionStrategy();
         try
         {
-            await strategy.ExecuteAsync(async () =>
+            // Run entire DB operation on background thread to keep UI responsive
+            sale = await Task.Run(async () =>
             {
-                using var tx = await _db.Database.BeginTransactionAsync();
-
-                // 1. Deduct stock and GRN
-                DeductStock();
-                DeductGRN();
-
-                // 2. Generate invoice number
-                int nextNum = (_db.Sales.Any() ? _db.Sales.Max(s => s.Id) : 0) + 1;
-
-                // 3. Create Sale record
-                sale = new Sale
+                _db = new StockDbContext();
+                var strategy = _db.Database.CreateExecutionStrategy();
+                Sale s = null;
+                await strategy.ExecuteAsync(async () =>
                 {
-                    DateTime = DateTime.Now,
-                    TotalAmount = _total,
-                    CashAmount = cash,
-                    CardAmount = card,
-                    ChangeGiven = change,
-                    InvoiceNumber = $"INV-{nextNum:D5}",
-                    CashierName = string.IsNullOrEmpty(App.LoggedInUserName) ? "Cashier" : App.LoggedInUserName,
-                    Items = _cartItems.Select(i => new SaleItem
+                    using var tx = await _db.Database.BeginTransactionAsync();
+
+                    // 1. Deduct stock and GRN
+                    DeductStock();
+                    DeductGRN();
+
+                    // 2. Generate invoice number
+                    int nextNum = (_db.Sales.Any() ? _db.Sales.Max(x => x.Id) : 0) + 1;
+
+                    // 3. Create Sale record
+                    s = new Sale
                     {
-                        MenuItemId = i.MenuItemId,
-                        ItemName = i.Name,
-                        Quantity = i.Quantity,
-                        PricePerItem = i.Price,
-                        TotalPrice = i.Total
-                    }).ToList()
-                };
-                _db.Sales.Add(sale);
+                        DateTime = DateTime.Now,
+                        TotalAmount = _total,
+                        CashAmount = cash,
+                        CardAmount = card,
+                        ChangeGiven = change,
+                        InvoiceNumber = $"INV-{nextNum:D5}",
+                        CashierName = string.IsNullOrEmpty(App.LoggedInUserName) ? "Cashier" : App.LoggedInUserName,
+                        Items = _cartItems.Select(i => new SaleItem
+                        {
+                            MenuItemId = i.MenuItemId,
+                            ItemName = i.Name,
+                            Quantity = i.Quantity,
+                            PricePerItem = i.Price,
+                            TotalPrice = i.Total
+                        }).ToList()
+                    };
+                    _db.Sales.Add(s);
 
-                // 4. Mark SalesOrder as paid (if loaded from QR scan)
-                if (_salesOrderId.HasValue)
-                {
-                    var salesOrder = _db.SalesOrders.Find(_salesOrderId.Value);
-                    if (salesOrder != null)
-                        salesOrder.Status = 1; // Paid
-                }
+                    // 4. Mark SalesOrder as paid (if loaded from QR scan)
+                    if (_salesOrderId.HasValue)
+                    {
+                        var salesOrder = _db.SalesOrders.Find(_salesOrderId.Value);
+                        if (salesOrder != null)
+                            salesOrder.Status = 1; // Paid
+                    }
 
-                await _db.SaveChangesAsync();
-                await tx.CommitAsync();
+                    await _db.SaveChangesAsync();
+                    await tx.CommitAsync();
+                });
+                return s;
             });
 
             // Print receipt (outside transaction)
             if (sale != null)
                 await PrintToThermal(sale, cash, card, change);
 
-            await Navigation.PopModalAsync();
+            LastPaymentCompleted = true;
+            await Navigation.PopModalAsync(false); // no animation
         }
         catch (DbUpdateException dbEx)
         {

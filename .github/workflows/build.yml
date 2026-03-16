@@ -60,41 +60,52 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.23.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.23.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.23.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.23.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.23.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.24.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.24.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.24.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.24.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.24.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.23
-          name: v1.23 - Celeron/Low-End Hardware Optimization
+          tag_name: v1.24
+          name: v1.24 - Instant Payment Popup & Cancel Fix
           body: |
-            ## Changes in v1.23 - Celeron/Low-End Hardware Optimization
+            ## Changes in v1.24 - Instant Payment Popup & Cancel Fix
 
-            ### All POS Terminals (Cashier, Salesman, Restaurant, Admin)
-            - **NATIVE PRE-COMPILATION (R2R)**: ReadyToRun enabled — code is pre-compiled to native x64 at build time, eliminating JIT compilation delay on Celeron CPUs. Startup and first-action response are significantly faster.
-            - **ASYNC DATA LOADING**: All database queries (items, categories) now run on background threads — UI stays responsive while data loads, no more frozen screen on slow hardware.
+            ### Cashier System
+            - **INSTANT CANCEL**: Cancel button now closes payment popup instantly — no item reload, cart stays exactly as it was
+            - **INSTANT PAY BUTTON**: Payment popup opens instantly — DB connection deferred to Confirm only (no DB work on open)
+            - **ZERO-ANIMATION MODALS**: All popup open/close transitions disabled for instant response
+            - **BACKGROUND DB ON CONFIRM**: Sale creation, stock deduction, and GRN deduction all run on background thread — UI stays responsive
+            - **ASYNC DAILY REPORT**: Daily sales report query runs on background thread
+            - **ASYNC QR SCAN LOAD**: Sales order lookup runs on background thread
 
-            ### Performance Impact
-            - Eliminates 2-4 second JIT compilation delay on first use of each feature
-            - UI renders immediately, data populates in background
-            - Optimized for Celeron + 4GB RAM hardware
+            ### Restaurant System
+            - **INSTANT CANCEL**: Same fix — cancel keeps cart, no unnecessary clearing
+            - **INSTANT PAY BUTTON**: Same — no animation, background DB on confirm
+            - **BACKGROUND DB ON CONFIRM**: Restaurant sale creation runs on background thread
+
+            ### Salesman System
+            - **ASYNC ORDER CREATION**: Sales order number generation runs on background thread
+            - **ZERO-ANIMATION MODALS**: History popup opens instantly
+
+            ### Performance Target
+            - All user actions now respond in under 1 second on Celeron + 4GB RAM hardware
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.23.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.23.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.23.zip** — API server
-            - **RoyalBakeryAdmin-v1.23.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.23.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.24.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.24.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.24.zip** — API server
+            - **RoyalBakeryAdmin-v1.24.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.24.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.23.zip
-            RoyalBakerySalesman-v1.23.zip
-            RoyalBakeryAPI-v1.23.zip
-            RoyalBakeryAdmin-v1.23.zip
-            RoyalBakeryRestaurant-v1.23.zip
+            RoyalBakeryCashier-v1.24.zip
+            RoyalBakerySalesman-v1.24.zip
+            RoyalBakeryAPI-v1.24.zip
+            RoyalBakeryAdmin-v1.24.zip
+            RoyalBakeryRestaurant-v1.24.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -291,11 +291,15 @@ public partial class RestaurantPage : ContentPage
         {
             BarBackgroundColor = Color.FromArgb("#1A1A1A"),
             BarTextColor = Colors.White
-        });
+        }, false); // no animation = instant open
 
-        // Clear cart after returning from payment (sale was completed there)
-        _cartItems.Clear();
-        UpdateTotal();
+        // Only clear cart if payment was completed (not cancelled)
+        if (RestaurantPaymentPage.LastPaymentCompleted)
+        {
+            _cartItems.Clear();
+            UpdateTotal();
+            RestaurantPaymentPage.LastPaymentCompleted = false;
+        }
     }
 
     private async void SalesHistory_Clicked(object sender, EventArgs e)
@@ -304,7 +308,7 @@ public partial class RestaurantPage : ContentPage
         {
             BarBackgroundColor = Color.FromArgb("#1A1A1A"),
             BarTextColor = Colors.White
-        });
+        }, false);
     }
 
     private async void RefreshItems_Clicked(object sender, EventArgs e)

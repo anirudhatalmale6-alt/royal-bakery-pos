@@ -69,15 +69,17 @@ namespace RoyalBakeryCashier.Pages
                 }
             }
 
-            // Always reload items and clear cart when page reappears (e.g., after payment modal closes)
-            _cartItems.Clear(); // ObservableCollection auto-notifies UI
-            await LoadItemsAsync();
-            UpdateTotal();
+            // Reload items only on first load or after a completed payment (stock changed)
+            if (_allItems == null || PaymentPage.LastPaymentCompleted)
+            {
+                _cartItems.Clear();
+                await LoadItemsAsync();
+                UpdateTotal();
+                PaymentPage.LastPaymentCompleted = false;
+            }
+            // If cancelled, cart stays as-is — no reload, no clear
 
-            // Keep focus on the sales order entry for scanner input
-            // Delay focus slightly so MAUI layout is complete
-            await Task.Delay(100);
-            SalesOrderEntry.Text = string.Empty; // clear any previous scan
+            SalesOrderEntry.Text = string.Empty;
             SalesOrderEntry.Focus();
         }
 
@@ -161,10 +163,10 @@ namespace RoyalBakeryCashier.Pages
                 var today = DateTime.Today;
                 var tomorrow = today.AddDays(1);
 
-                var todaySales = _dbContext.Sales
+                var todaySales = await Task.Run(() => _dbContext.Sales
                     .Include(s => s.Items)
                     .Where(s => s.DateTime >= today && s.DateTime < tomorrow)
-                    .ToList();
+                    .ToList());
 
                 int invoiceCount = todaySales.Count;
                 decimal totalRevenue = todaySales.Sum(s => s.TotalAmount);
@@ -217,7 +219,7 @@ namespace RoyalBakeryCashier.Pages
                 {
                     BarBackgroundColor = Color.FromArgb("#1A1A1A"),
                     BarTextColor = Colors.White
-                });
+                }, false);
             }
             catch (Exception ex)
             {
@@ -268,14 +270,17 @@ namespace RoyalBakeryCashier.Pages
 
             SalesOrderEntry.Text = string.Empty;
 
-            // Use separate context with AsNoTracking for faster query
-            using var db = new StockDbContext();
-            var salesOrder = db.SalesOrders
-                .AsNoTracking()
-                .Include(so => so.Items)
-                .ThenInclude(i => i.MenuItem)
-                .FirstOrDefault(so => so.SalesOrderNumber == searchText
-                    || so.Id.ToString() == searchText);
+            // Use separate context with AsNoTracking for faster query — run on background thread
+            var salesOrder = await Task.Run(() =>
+            {
+                using var db = new StockDbContext();
+                return db.SalesOrders
+                    .AsNoTracking()
+                    .Include(so => so.Items)
+                    .ThenInclude(i => i.MenuItem)
+                    .FirstOrDefault(so => so.SalesOrderNumber == searchText
+                        || so.Id.ToString() == searchText);
+            });
 
             if (salesOrder == null)
             {
@@ -505,7 +510,7 @@ namespace RoyalBakeryCashier.Pages
             {
                 BarBackgroundColor = Color.FromArgb("#1A1A1A"),
                 BarTextColor = Colors.White
-            });
+            }, false); // no animation = instant open
             _loadedSalesOrderId = null;
         }
 
