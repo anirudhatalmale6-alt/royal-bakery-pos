@@ -60,24 +60,26 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.26.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.26.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.26.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.26.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.26.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.26.1.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.26.1.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.26.1.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.26.1.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.26.1.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.26
-          name: v1.26 - PickMe Delivery Platform Integration
+          tag_name: v1.26.1
+          name: v1.26.1 - PickMe Integration + GRN Stock Fix
           body: |
-            ## Changes in v1.26 - PickMe Delivery Platform Integration
+            ## Changes in v1.26.1 - PickMe Integration + GRN Stock Fix
 
             ### API (RoyalBakeryAPI)
+            - **GRN FIFO DEDUCTION**: PickMe bakery orders now deduct from GRNItems.CurrentQuantity (FIFO, oldest first) — same pattern as in-store sales
+            - **LEGACY REF_ID SUPPORT**: Supports both new format (B-123, R-45) and legacy format (44383_B123, 44383_R45)
             - **PICKME POLLING SERVICE**: Background service polls PickMe API every 30 seconds for new orders
             - **AUTO-SAVE ORDERS**: When "Merchant Confirmed" order detected, automatically creates RestaurantSale/Sale records
-            - **BAKERY STOCK DEDUCTION**: Bakery items from PickMe orders automatically deduct stock
+            - **BAKERY STOCK DEDUCTION**: Bakery items from PickMe orders deduct both Stock.Quantity and GRNItems.CurrentQuantity
             - **DELIVERY ORDER TRACKING**: New DeliveryOrders + DeliveryOrderItems tables track all platform orders
             - **KOT ENDPOINT**: GET /api/delivery/pending-kot for Restaurant POS to fetch orders needing KOT print
             - **DELIVERY API**: GET /api/delivery/orders with platform/date filters for Admin Panel
@@ -100,17 +102,17 @@ jobs:
             - terminal.config: ApiUrl setting for Restaurant POS
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.26.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.26.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.26.zip** — API server
-            - **RoyalBakeryAdmin-v1.26.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.26.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.26.1.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.26.1.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.26.1.zip** — API server
+            - **RoyalBakeryAdmin-v1.26.1.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.26.1.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.26.zip
-            RoyalBakerySalesman-v1.26.zip
-            RoyalBakeryAPI-v1.26.zip
-            RoyalBakeryAdmin-v1.26.zip
-            RoyalBakeryRestaurant-v1.26.zip
+            RoyalBakeryCashier-v1.26.1.zip
+            RoyalBakerySalesman-v1.26.1.zip
+            RoyalBakeryAPI-v1.26.1.zip
+            RoyalBakeryAdmin-v1.26.1.zip
+            RoyalBakeryRestaurant-v1.26.1.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

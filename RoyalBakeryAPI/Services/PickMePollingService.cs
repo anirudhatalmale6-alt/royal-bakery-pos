@@ -198,7 +198,8 @@ public class PickMePollingService : BackgroundService
                 var itemType = "U";
                 int? localItemId = null;
 
-                // Parse ref_id format: "B-123" or "R-45"
+                // Parse ref_id format: "B-123" or "R-45" (preferred)
+                // Also supports legacy format "44383_B123" or "44383_R45" (prefix_TypeId)
                 if (refId.StartsWith("B-", StringComparison.OrdinalIgnoreCase) &&
                     int.TryParse(refId[2..], out int bakeryId))
                 {
@@ -212,6 +213,25 @@ public class PickMePollingService : BackgroundService
                     itemType = "R";
                     localItemId = restId;
                     restaurantItems.Add((restId, item.Name ?? "", item.Qty, item.Total / Math.Max(item.Qty, 1)));
+                }
+                else if (refId.Contains('_'))
+                {
+                    // Legacy format: "44383_B123" or "44383_R45"
+                    var afterUnderscore = refId.Split('_').Last();
+                    if (afterUnderscore.StartsWith("B", StringComparison.OrdinalIgnoreCase) &&
+                        int.TryParse(afterUnderscore[1..], out int legacyBakeryId))
+                    {
+                        itemType = "B";
+                        localItemId = legacyBakeryId;
+                        bakeryItems.Add((legacyBakeryId, item.Name ?? "", item.Qty, item.Total / Math.Max(item.Qty, 1)));
+                    }
+                    else if (afterUnderscore.StartsWith("R", StringComparison.OrdinalIgnoreCase) &&
+                             int.TryParse(afterUnderscore[1..], out int legacyRestId))
+                    {
+                        itemType = "R";
+                        localItemId = legacyRestId;
+                        restaurantItems.Add((legacyRestId, item.Name ?? "", item.Qty, item.Total / Math.Max(item.Qty, 1)));
+                    }
                 }
 
                 // Build options string from nested options
@@ -303,13 +323,28 @@ public class PickMePollingService : BackgroundService
             };
             db.Sales.Add(sale);
 
-            // Deduct stock for each bakery item
+            // Deduct stock + GRNItems CurrentQuantity (FIFO) for each bakery item
             foreach (var bi in bakeryItems)
             {
                 var stock = await db.Stocks.FirstOrDefaultAsync(s => s.MenuItemId == bi.localId, ct);
                 if (stock != null)
                 {
                     stock.Quantity = Math.Max(0, stock.Quantity - bi.qty);
+                }
+
+                // FIFO GRN deduction: deduct from oldest GRN items first
+                var grnItems = await db.GRNItems
+                    .Where(g => g.MenuItemId == bi.localId && g.CurrentQuantity > 0)
+                    .OrderBy(g => g.Id)
+                    .ToListAsync(ct);
+
+                int remaining = bi.qty;
+                foreach (var gi in grnItems)
+                {
+                    if (remaining <= 0) break;
+                    int deduct = Math.Min(gi.CurrentQuantity, remaining);
+                    gi.CurrentQuantity -= deduct;
+                    remaining -= deduct;
                 }
             }
 
