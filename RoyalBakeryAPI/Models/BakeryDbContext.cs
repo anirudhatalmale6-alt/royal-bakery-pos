@@ -17,6 +17,19 @@ public class BakeryDbContext : DbContext
     public DbSet<GRNEditLog> GRNEditLogs { get; set; }
     public DbSet<User> Users { get; set; }
 
+    // Delivery platform integration
+    public DbSet<DeliveryOrder> DeliveryOrders { get; set; }
+    public DbSet<DeliveryOrderItem> DeliveryOrderItems { get; set; }
+
+    // Restaurant entities (needed for delivery order processing)
+    public DbSet<RestaurantItem> RestaurantItems { get; set; }
+    public DbSet<RestaurantSale> RestaurantSales { get; set; }
+    public DbSet<RestaurantSaleItem> RestaurantSaleItems { get; set; }
+
+    // Bakery sales (needed for delivery stock deduction)
+    public DbSet<Sale> Sales { get; set; }
+    public DbSet<SaleItem> SaleItems { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -65,5 +78,26 @@ public class BakeryDbContext : DbContext
 
         modelBuilder.Entity<GRNItem>().Property(p => p.Price).HasColumnType("decimal(18,2)");
         modelBuilder.Entity<Stock>().Property(s => s.Quantity).HasColumnType("int");
+
+        // Delivery order relationships
+        modelBuilder.Entity<DeliveryOrderItem>()
+            .HasOne(doi => doi.DeliveryOrder)
+            .WithMany(d => d.Items)
+            .HasForeignKey(doi => doi.DeliveryOrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Restaurant sale relationships
+        modelBuilder.Entity<RestaurantSaleItem>()
+            .HasOne(si => si.Sale)
+            .WithMany(s => s.Items)
+            .HasForeignKey(si => si.RestaurantSaleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Bakery sale relationships
+        modelBuilder.Entity<SaleItem>()
+            .HasOne(si => si.Sale)
+            .WithMany(s => s.Items)
+            .HasForeignKey(si => si.SaleId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

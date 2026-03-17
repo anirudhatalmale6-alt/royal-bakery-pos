@@ -14,6 +14,13 @@ public partial class App : Application
     /// </summary>
     public static string KOTPrinterName { get; set; } = "";
 
+    /// <summary>
+    /// API base URL for polling delivery orders.
+    /// Set via terminal.config: ApiUrl=http://192.168.1.100:5000
+    /// Defaults to http://localhost:5000
+    /// </summary>
+    public static string ApiBaseUrl { get; set; } = "http://localhost:5000";
+
     public App()
     {
         InitializeComponent();
@@ -66,6 +73,8 @@ public partial class App : Application
                         DbPassword = val;
                     else if (key.Equals("KOTPrinter", StringComparison.OrdinalIgnoreCase))
                         KOTPrinterName = val;
+                    else if (key.Equals("ApiUrl", StringComparison.OrdinalIgnoreCase))
+                        ApiBaseUrl = val;
                 }
             }
         }

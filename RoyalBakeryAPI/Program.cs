@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RoyalBakeryAPI.Models;
+using RoyalBakeryAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,10 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
+
+// Register PickMe polling background service
+builder.Services.AddHttpClient("PickMe");
+builder.Services.AddHostedService<PickMePollingService>();
 
 var app = builder.Build();
 
@@ -214,6 +219,45 @@ using (var scope = app.Services.CreateScope())
             -- Add QuickCategory column if missing
             IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MenuItems') AND name = 'QuickCategory')
               ALTER TABLE MenuItems ADD QuickCategory INT NOT NULL DEFAULT 0;
+
+            -- Delivery Platform Integration Tables
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='DeliveryOrders' AND xtype='U')
+            CREATE TABLE DeliveryOrders (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                PlatformName NVARCHAR(50) NOT NULL,
+                PlatformOrderId NVARCHAR(200) NOT NULL,
+                AccountName NVARCHAR(100) NOT NULL DEFAULT '',
+                RestaurantSaleId INT NULL,
+                BakerySaleId INT NULL,
+                CustomerPhone NVARCHAR(50) NULL,
+                CustomerAddress NVARCHAR(MAX) NULL,
+                DeliveryMode NVARCHAR(20) NOT NULL DEFAULT 'Delivery',
+                PlatformStatus NVARCHAR(100) NOT NULL DEFAULT '',
+                OrderTotal DECIMAL(18,2) NOT NULL DEFAULT 0,
+                PaymentMethod NVARCHAR(50) NULL,
+                DeliveryNote NVARCHAR(MAX) NULL,
+                ReceivedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+                CompletedAt DATETIME2 NULL,
+                KotStatus INT NOT NULL DEFAULT 0,
+                RawOrderJson NVARCHAR(MAX) NULL
+            );
+
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='DeliveryOrderItems' AND xtype='U')
+            CREATE TABLE DeliveryOrderItems (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                DeliveryOrderId INT NOT NULL,
+                PlatformItemId INT NOT NULL DEFAULT 0,
+                PlatformRefId NVARCHAR(100) NULL,
+                ItemName NVARCHAR(200) NOT NULL DEFAULT '',
+                Quantity INT NOT NULL DEFAULT 0,
+                PricePerItem DECIMAL(18,2) NOT NULL DEFAULT 0,
+                TotalPrice DECIMAL(18,2) NOT NULL DEFAULT 0,
+                SpecialInstructions NVARCHAR(MAX) NULL,
+                Options NVARCHAR(MAX) NULL,
+                ItemType NVARCHAR(5) NOT NULL DEFAULT 'U',
+                LocalItemId INT NULL,
+                FOREIGN KEY (DeliveryOrderId) REFERENCES DeliveryOrders(Id) ON DELETE CASCADE
+            );
         ");
         Console.WriteLine("Database tables verified/created.");
 
@@ -299,5 +343,9 @@ Console.WriteLine("  PUT  /api/grn/{id}          (direct edit)");
 Console.WriteLine("  GET  /api/grn/{id}/edits    (edit history)");
 Console.WriteLine("  GET  /api/clearance");
 Console.WriteLine("  POST /api/clearance");
+Console.WriteLine("  GET  /api/delivery/pending-kot    (for Restaurant POS KOT)");
+Console.WriteLine("  POST /api/delivery/{id}/kot-done  (mark KOT printed)");
+Console.WriteLine("  GET  /api/delivery/orders          (delivery order list)");
+Console.WriteLine("  GET  /api/delivery/orders/{id}     (delivery order detail)");
 
 app.Run();

@@ -69,4 +69,8 @@
         <ShellContent ContentTemplate="{DataTemplate pages:RestaurantCategoriesPage}"/>
     </FlyoutItem>
 
+    <FlyoutItem Title="Delivery Orders">
+        <ShellContent ContentTemplate="{DataTemplate pages:DeliveryOrdersPage}"/>
+    </FlyoutItem>
+
 </Shell>

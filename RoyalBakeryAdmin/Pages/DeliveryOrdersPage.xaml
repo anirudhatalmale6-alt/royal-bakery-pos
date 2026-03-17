@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RoyalBakeryAdmin.Pages.DeliveryOrdersPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             BackgroundColor="#F0F2F5">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="30" RowSpacing="15">
+
+        <Label Text="Delivery Orders" FontSize="28" FontAttributes="Bold" TextColor="#1A237E"/>
+
+        <!-- Filters -->
+        <Frame Grid.Row="1" BackgroundColor="White" Padding="12,10" CornerRadius="10" HasShadow="True">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12">
+                <Label Text="Platform:" VerticalOptions="Center" TextColor="#212121" FontSize="14" FontAttributes="Bold"/>
+                <Picker x:Name="PlatformFilter" Grid.Column="1" WidthRequest="140" TextColor="#212121" FontSize="14">
+                    <Picker.ItemsSource>
+                        <x:Array Type="{x:Type x:String}">
+                            <x:String>All</x:String>
+                            <x:String>PickMe</x:String>
+                            <x:String>UberEats</x:String>
+                        </x:Array>
+                    </Picker.ItemsSource>
+                </Picker>
+                <Label Grid.Column="2" Text="Date:" VerticalOptions="Center" TextColor="#212121" FontSize="14" FontAttributes="Bold"/>
+                <DatePicker x:Name="FilterDate" Grid.Column="3" TextColor="#212121" FontSize="14"/>
+                <Button Grid.Column="4" Text="Filter"
+                        BackgroundColor="#1A237E" TextColor="White"
+                        CornerRadius="8" HeightRequest="40" FontSize="14"
+                        Clicked="Filter_Clicked"/>
+                <Button Grid.Column="5" Text="Today"
+                        BackgroundColor="#4CAF50" TextColor="White"
+                        CornerRadius="8" HeightRequest="40" FontSize="14"
+                        Clicked="Today_Clicked"/>
+                <Button Grid.Column="6" Text="Refresh"
+                        BackgroundColor="#FF9800" TextColor="White"
+                        CornerRadius="8" HeightRequest="40" FontSize="14"
+                        Clicked="Refresh_Clicked"/>
+            </Grid>
+        </Frame>
+
+        <Grid Grid.Row="2" RowDefinitions="Auto,*,Auto" RowSpacing="15">
+
+            <!-- Summary -->
+            <FlexLayout Wrap="Wrap" JustifyContent="Start" Direction="Row">
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Total Orders" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="TotalOrdersLabel" Text="0" FontSize="20"
+                               FontAttributes="Bold" TextColor="#1A237E"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Total Revenue" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="TotalRevenueLabel" Text="Rs. 0.00" FontSize="20"
+                               FontAttributes="Bold" TextColor="#4CAF50"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="PickMe Orders" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="PickMeCountLabel" Text="0" FontSize="20"
+                               FontAttributes="Bold" TextColor="#FF9800"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame BackgroundColor="White" Padding="15" Margin="5" CornerRadius="10" HasShadow="True" WidthRequest="180">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Uber Orders" FontSize="12" TextColor="#757575"/>
+                        <Label x:Name="UberCountLabel" Text="0" FontSize="20"
+                               FontAttributes="Bold" TextColor="#2196F3"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </FlexLayout>
+
+            <!-- Orders Table -->
+            <Frame Grid.Row="1" BackgroundColor="White" Padding="0" CornerRadius="12" HasShadow="True">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid ColumnDefinitions="80,100,120,80,100,100,80,*"
+                          Padding="12,8" BackgroundColor="#E8EAF6" ColumnSpacing="8">
+                        <Label Text="Platform" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="1" Text="Order ID" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="2" Text="Date/Time" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="3" Text="Mode" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="4" Text="Total" FontAttributes="Bold" TextColor="#1A237E" FontSize="12" HorizontalTextAlignment="End"/>
+                        <Label Grid.Column="5" Text="Status" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="6" Text="KOT" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                        <Label Grid.Column="7" Text="Items" FontAttributes="Bold" TextColor="#1A237E" FontSize="12"/>
+                    </Grid>
+                    <CollectionView x:Name="OrdersView" Grid.Row="1" SelectionMode="Single" SelectionChanged="OrdersView_SelectionChanged">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="80,100,120,80,100,100,80,*"
+                                      Padding="12,6" ColumnSpacing="8">
+                                    <Label Text="{Binding PlatformName}" FontSize="12" TextColor="#212121" FontAttributes="Bold" VerticalOptions="Center"/>
+                                    <Label Grid.Column="1" Text="{Binding ShortOrderId}" FontSize="11" TextColor="#757575" VerticalOptions="Center"/>
+                                    <Label Grid.Column="2" Text="{Binding ReceivedAt, StringFormat='{0:dd/MM HH:mm}'}" FontSize="12" TextColor="#757575" VerticalOptions="Center"/>
+                                    <Label Grid.Column="3" Text="{Binding DeliveryMode}" FontSize="12" TextColor="#212121" VerticalOptions="Center"/>
+                                    <Label Grid.Column="4" Text="{Binding OrderTotal, StringFormat='Rs. {0:N2}'}" FontSize="12" HorizontalTextAlignment="End" TextColor="#212121" FontAttributes="Bold" VerticalOptions="Center"/>
+                                    <Label Grid.Column="5" Text="{Binding PlatformStatus}" FontSize="11" TextColor="#4CAF50" VerticalOptions="Center"/>
+                                    <Label Grid.Column="6" Text="{Binding KotStatusText}" FontSize="11" TextColor="#FF9800" VerticalOptions="Center"/>
+                                    <Label Grid.Column="7" Text="{Binding ItemSummary}" FontSize="11" TextColor="#757575" VerticalOptions="Center" LineBreakMode="TailTruncation"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+            </Frame>
+
+            <!-- Order Detail Panel -->
+            <Frame x:Name="DetailPanel" Grid.Row="2" BackgroundColor="White" Padding="15" CornerRadius="12" HasShadow="True" IsVisible="False">
+                <VerticalStackLayout Spacing="8">
+                    <Label x:Name="DetailTitle" FontSize="18" FontAttributes="Bold" TextColor="#1A237E"/>
+                    <Label x:Name="DetailInfo" FontSize="13" TextColor="#424242"/>
+                    <Label x:Name="DetailItems" FontSize="13" TextColor="#212121" FontFamily="Consolas"/>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
+    </Grid>
+</ContentPage>

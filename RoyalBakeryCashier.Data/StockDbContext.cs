@@ -33,6 +33,10 @@ namespace RoyalBakeryCashier.Data
         public DbSet<RestaurantSale> RestaurantSales { get; set; }
         public DbSet<RestaurantSaleItem> RestaurantSaleItems { get; set; }
 
+        // Delivery platform integration (PickMe, UberEats)
+        public DbSet<DeliveryOrder> DeliveryOrders { get; set; }
+        public DbSet<DeliveryOrderItem> DeliveryOrderItems { get; set; }
+
         /// <summary>
         /// Static connection string override. Set from App.xaml.cs based on terminal.config.
         /// If null/empty, falls back to localhost with Windows Authentication.
@@ -141,6 +145,20 @@ namespace RoyalBakeryCashier.Data
                 .WithMany()
                 .HasForeignKey(ri => ri.RestaurantCategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ===== Delivery Order Entities =====
+            modelBuilder.Entity<DeliveryOrderItem>()
+                .HasOne(doi => doi.DeliveryOrder)
+                .WithMany(d => d.Items)
+                .HasForeignKey(doi => doi.DeliveryOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<DeliveryOrder>()
+                .Property(d => d.OrderTotal).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<DeliveryOrderItem>()
+                .Property(doi => doi.PricePerItem).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<DeliveryOrderItem>()
+                .Property(doi => doi.TotalPrice).HasColumnType("decimal(18,2)");
         }
 
         /// <summary>
@@ -369,6 +387,45 @@ namespace RoyalBakeryCashier.Data
                       TotalPrice DECIMAL(18,2) NOT NULL DEFAULT 0,
                       CONSTRAINT FK_RestaurantSaleItems_Sales FOREIGN KEY (RestaurantSaleId) REFERENCES RestaurantSales(Id) ON DELETE CASCADE,
                       CONSTRAINT FK_RestaurantSaleItems_Items FOREIGN KEY (RestaurantItemId) REFERENCES RestaurantItems(Id) ON DELETE NO ACTION
+                  );",
+
+                // ===== Delivery Platform Integration Tables =====
+                @"IF OBJECT_ID('DeliveryOrders', 'U') IS NULL
+                  CREATE TABLE DeliveryOrders (
+                      Id INT IDENTITY(1,1) PRIMARY KEY,
+                      PlatformName NVARCHAR(50) NOT NULL,
+                      PlatformOrderId NVARCHAR(200) NOT NULL,
+                      AccountName NVARCHAR(100) NOT NULL DEFAULT '',
+                      RestaurantSaleId INT NULL,
+                      BakerySaleId INT NULL,
+                      CustomerPhone NVARCHAR(50) NULL,
+                      CustomerAddress NVARCHAR(MAX) NULL,
+                      DeliveryMode NVARCHAR(20) NOT NULL DEFAULT 'Delivery',
+                      PlatformStatus NVARCHAR(100) NOT NULL DEFAULT '',
+                      OrderTotal DECIMAL(18,2) NOT NULL DEFAULT 0,
+                      PaymentMethod NVARCHAR(50) NULL,
+                      DeliveryNote NVARCHAR(MAX) NULL,
+                      ReceivedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+                      CompletedAt DATETIME2 NULL,
+                      KotStatus INT NOT NULL DEFAULT 0,
+                      RawOrderJson NVARCHAR(MAX) NULL
+                  );",
+
+                @"IF OBJECT_ID('DeliveryOrderItems', 'U') IS NULL
+                  CREATE TABLE DeliveryOrderItems (
+                      Id INT IDENTITY(1,1) PRIMARY KEY,
+                      DeliveryOrderId INT NOT NULL,
+                      PlatformItemId INT NOT NULL DEFAULT 0,
+                      PlatformRefId NVARCHAR(100) NULL,
+                      ItemName NVARCHAR(200) NOT NULL DEFAULT '',
+                      Quantity INT NOT NULL DEFAULT 0,
+                      PricePerItem DECIMAL(18,2) NOT NULL DEFAULT 0,
+                      TotalPrice DECIMAL(18,2) NOT NULL DEFAULT 0,
+                      SpecialInstructions NVARCHAR(MAX) NULL,
+                      Options NVARCHAR(MAX) NULL,
+                      ItemType NVARCHAR(5) NOT NULL DEFAULT 'U',
+                      LocalItemId INT NULL,
+                      CONSTRAINT FK_DeliveryOrderItems_DeliveryOrders FOREIGN KEY (DeliveryOrderId) REFERENCES DeliveryOrders(Id) ON DELETE CASCADE
                   );",
             };
 

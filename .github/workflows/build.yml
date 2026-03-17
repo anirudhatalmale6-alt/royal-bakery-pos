@@ -60,37 +60,57 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.25.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.25.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.25.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.25.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.25.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.26.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.26.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.26.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.26.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.26.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.25
-          name: v1.25 - QR Scanner Works From Any Input Field
+          tag_name: v1.26
+          name: v1.26 - PickMe Delivery Platform Integration
           body: |
-            ## Changes in v1.25 - QR Scanner Works From Any Input Field
+            ## Changes in v1.26 - PickMe Delivery Platform Integration
 
-            ### Cashier System
-            - **QR SCAN FROM ANY FIELD**: QR scanner now works regardless of which input field has focus — if scanner types a sales order number (SO-XXXXX) into the item search box, it is automatically detected and redirected to the order search
-            - **ENTER KEY DETECTION**: When scanner sends Enter key after typing into item search, SO- prefix is detected and order is loaded instantly
-            - **DEBOUNCE DETECTION**: Even without Enter key, the 150ms search debounce detects SO- prefix and redirects to order search
+            ### API (RoyalBakeryAPI)
+            - **PICKME POLLING SERVICE**: Background service polls PickMe API every 30 seconds for new orders
+            - **AUTO-SAVE ORDERS**: When "Merchant Confirmed" order detected, automatically creates RestaurantSale/Sale records
+            - **BAKERY STOCK DEDUCTION**: Bakery items from PickMe orders automatically deduct stock
+            - **DELIVERY ORDER TRACKING**: New DeliveryOrders + DeliveryOrderItems tables track all platform orders
+            - **KOT ENDPOINT**: GET /api/delivery/pending-kot for Restaurant POS to fetch orders needing KOT print
+            - **DELIVERY API**: GET /api/delivery/orders with platform/date filters for Admin Panel
+            - **REF_ID MAPPING**: Items mapped via ref_id format B-{id} (bakery) and R-{id} (restaurant)
+            - **MULTI-ACCOUNT SUPPORT**: Supports 2 PickMe accounts (bakery+restaurant and restaurant-only)
+
+            ### Restaurant POS
+            - **AUTO KOT PRINTING**: Polls API every 5 seconds, auto-prints KOT for new delivery orders
+            - **DELIVERY KOT FORMAT**: Shows platform name, order ID, delivery mode, phone, items with options/notes
+            - **API URL CONFIG**: New terminal.config setting ApiUrl for API connection
+
+            ### Admin Panel
+            - **DELIVERY ORDERS PAGE**: New page showing all delivery platform orders
+            - **PLATFORM FILTERS**: Filter by PickMe/UberEats and date
+            - **ORDER DETAIL VIEW**: Click any order to see full details (items, customer, status, KOT status)
+            - **SUMMARY CARDS**: Total orders, revenue, PickMe count, Uber count
+
+            ### Configuration
+            - appsettings.json: PickMe API keys, sandbox/live URLs, poll interval
+            - terminal.config: ApiUrl setting for Restaurant POS
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.25.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.25.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.25.zip** — API server
-            - **RoyalBakeryAdmin-v1.25.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.25.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.26.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.26.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.26.zip** — API server
+            - **RoyalBakeryAdmin-v1.26.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.26.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.25.zip
-            RoyalBakerySalesman-v1.25.zip
-            RoyalBakeryAPI-v1.25.zip
-            RoyalBakeryAdmin-v1.25.zip
-            RoyalBakeryRestaurant-v1.25.zip
+            RoyalBakeryCashier-v1.26.zip
+            RoyalBakerySalesman-v1.26.zip
+            RoyalBakeryAPI-v1.26.zip
+            RoyalBakeryAdmin-v1.26.zip
+            RoyalBakeryRestaurant-v1.26.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

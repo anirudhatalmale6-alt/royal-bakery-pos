@@ -135,3 +135,140 @@ public class User
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 }
+
+// ===== Delivery Platform Integration =====
+
+[Table("DeliveryOrders")]
+public class DeliveryOrder
+{
+    [Key]
+    public int Id { get; set; }
+    public string PlatformName { get; set; } = string.Empty;
+    public string PlatformOrderId { get; set; } = string.Empty;
+    public string AccountName { get; set; } = string.Empty;
+    public int? RestaurantSaleId { get; set; }
+    public int? BakerySaleId { get; set; }
+    public string? CustomerPhone { get; set; }
+    public string? CustomerAddress { get; set; }
+    public string DeliveryMode { get; set; } = "Delivery";
+    public string PlatformStatus { get; set; } = string.Empty;
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal OrderTotal { get; set; }
+    public string? PaymentMethod { get; set; }
+    public string? DeliveryNote { get; set; }
+    public DateTime ReceivedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    /// <summary>0=PendingKOT, 1=KOTPrinted, 2=Completed</summary>
+    public int KotStatus { get; set; } = 0;
+    public string? RawOrderJson { get; set; }
+    public List<DeliveryOrderItem> Items { get; set; } = new();
+}
+
+[Table("DeliveryOrderItems")]
+public class DeliveryOrderItem
+{
+    [Key]
+    public int Id { get; set; }
+    public int DeliveryOrderId { get; set; }
+    public int PlatformItemId { get; set; }
+    public string? PlatformRefId { get; set; }
+    public string ItemName { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal PricePerItem { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal TotalPrice { get; set; }
+    public string? SpecialInstructions { get; set; }
+    public string? Options { get; set; }
+    /// <summary>"B" for bakery, "R" for restaurant, "U" for unmapped</summary>
+    public string ItemType { get; set; } = "U";
+    public int? LocalItemId { get; set; }
+    [ForeignKey("DeliveryOrderId")]
+    public DeliveryOrder? DeliveryOrder { get; set; }
+}
+
+// Restaurant entities needed by API for delivery order processing
+[Table("RestaurantItems")]
+public class RestaurantItem
+{
+    [Key]
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal Price { get; set; }
+    public int RestaurantCategoryId { get; set; }
+}
+
+[Table("RestaurantSales")]
+public class RestaurantSale
+{
+    [Key]
+    public int Id { get; set; }
+    public string InvoiceNumber { get; set; } = string.Empty;
+    public DateTime DateTime { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal TotalAmount { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal CashAmount { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal CardAmount { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal ChangeGiven { get; set; }
+    public string? CashierName { get; set; }
+    public string OrderSource { get; set; } = "Dine In";
+    public List<RestaurantSaleItem> Items { get; set; } = new();
+}
+
+[Table("RestaurantSaleItems")]
+public class RestaurantSaleItem
+{
+    [Key]
+    public int Id { get; set; }
+    public int RestaurantSaleId { get; set; }
+    public int RestaurantItemId { get; set; }
+    public string ItemName { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal PricePerItem { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal TotalPrice { get; set; }
+    [ForeignKey("RestaurantSaleId")]
+    public RestaurantSale? Sale { get; set; }
+}
+
+// Bakery Sales entity for delivery stock deduction
+[Table("Sales")]
+public class Sale
+{
+    [Key]
+    public int Id { get; set; }
+    public DateTime DateTime { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal TotalAmount { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal CashAmount { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal CardAmount { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal ChangeGiven { get; set; }
+    public string? CashierName { get; set; }
+    public string InvoiceNumber { get; set; } = string.Empty;
+    public List<SaleItem> Items { get; set; } = new();
+}
+
+[Table("SaleItems")]
+public class SaleItem
+{
+    [Key]
+    public int Id { get; set; }
+    public int SaleId { get; set; }
+    public int MenuItemId { get; set; }
+    public string ItemName { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal PricePerItem { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal TotalPrice { get; set; }
+    [ForeignKey("SaleId")]
+    public Sale? Sale { get; set; }
+}

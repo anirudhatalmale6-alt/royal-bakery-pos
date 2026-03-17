@@ -4,6 +4,10 @@ using Microsoft.Maui.Graphics;
 using RoyalBakeryCashier.Data;
 using RoyalBakeryCashier.Data.Entities;
 using System.Collections.ObjectModel;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using RoyalBakeryCashier.Helpers;
 
 namespace RoyalBakeryRestaurant.Pages;
 
@@ -14,6 +18,8 @@ public partial class RestaurantPage : ContentPage
     private ObservableCollection<CartItem> _cartItems;
     private bool _loaded = false;
     private CancellationTokenSource? _searchDebounce;
+    private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(5) };
+    private CancellationTokenSource? _kotPollCts;
 
     public RestaurantPage()
     {
@@ -33,6 +39,7 @@ public partial class RestaurantPage : ContentPage
         {
             await LoadCategoriesAsync();
             await LoadItemsAsync();
+            StartDeliveryKotPolling(); // Start polling API for delivery KOT orders
         }
         catch (Exception ex)
         {
@@ -318,6 +325,161 @@ public partial class RestaurantPage : ContentPage
     }
 
     private void UpdateTotal() => TotalLabel.Text = $"Total: Rs. {_cartItems.Sum(c => c.Total):F2}";
+
+    // ===== DELIVERY KOT AUTO-PRINT =====
+    // Polls API every 5 seconds for pending PickMe/Uber orders and prints KOT automatically
+
+    private void StartDeliveryKotPolling()
+    {
+        _kotPollCts?.Cancel();
+        _kotPollCts = new CancellationTokenSource();
+        var ct = _kotPollCts.Token;
+
+        Task.Run(async () =>
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                try
+                {
+                    await PollAndPrintDeliveryKot(ct);
+                }
+                catch { /* silent — API may not be running */ }
+
+                try { await Task.Delay(5000, ct); } catch { break; }
+            }
+        }, ct);
+    }
+
+    private async Task PollAndPrintDeliveryKot(CancellationToken ct)
+    {
+        var url = $"{App.ApiBaseUrl}/api/delivery/pending-kot";
+        var response = await _httpClient.GetAsync(url, ct);
+        if (!response.IsSuccessStatusCode) return;
+
+        var json = await response.Content.ReadAsStringAsync(ct);
+        var orders = JsonSerializer.Deserialize<List<DeliveryKotOrder>>(json,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        if (orders == null || orders.Count == 0) return;
+
+        foreach (var order in orders)
+        {
+            try
+            {
+                PrintDeliveryKot(order);
+
+                // Mark as printed
+                await _httpClient.PostAsync(
+                    $"{App.ApiBaseUrl}/api/delivery/{order.Id}/kot-done",
+                    null, ct);
+            }
+            catch { }
+        }
+    }
+
+    private void PrintDeliveryKot(DeliveryKotOrder order)
+    {
+        const int W = 48;
+        string Separator(char c = '-') => new string(c, W);
+
+        string printerName = App.KOTPrinterName;
+        if (string.IsNullOrEmpty(printerName))
+        {
+            printerName = Preferences.Get("ThermalPrinterName", "");
+            if (string.IsNullOrEmpty(printerName))
+                printerName = RawPrinterHelper.FindThermalPrinter() ?? "";
+        }
+        if (string.IsNullOrEmpty(printerName)) return;
+
+        var enc = Encoding.GetEncoding("IBM437");
+        byte[] init = { 0x1B, 0x40 };
+        byte[] center = { 0x1B, 0x61, 0x01 };
+        byte[] left = { 0x1B, 0x61, 0x00 };
+        byte[] bold_on = { 0x1B, 0x45, 0x01 };
+        byte[] bold_off = { 0x1B, 0x45, 0x00 };
+        byte[] dbl_on = { 0x1D, 0x21, 0x11 };
+        byte[] dbl_off = { 0x1D, 0x21, 0x00 };
+        byte[] feedCut = { 0x0A, 0x0A, 0x0A, 0x1D, 0x56, 0x41, 0x03 };
+
+        using var ms = new MemoryStream();
+        void Emit(byte[] b) => ms.Write(b, 0, b.Length);
+
+        Emit(init);
+        Emit(center);
+        Emit(dbl_on);
+        Emit(enc.GetBytes("** KOT **\n"));
+        Emit(dbl_off);
+        Emit(bold_on);
+        Emit(enc.GetBytes($"[ {order.PlatformName?.ToUpper()} ORDER ]\n"));
+        Emit(bold_off);
+        Emit(enc.GetBytes(Separator('=') + "\n"));
+
+        Emit(left);
+        Emit(enc.GetBytes($"Order: {order.PlatformOrderId}\n"));
+        Emit(enc.GetBytes($"Time:  {order.ReceivedAt:HH:mm dd/MM}\n"));
+        if (!string.IsNullOrEmpty(order.DeliveryMode))
+            Emit(enc.GetBytes($"Mode:  {order.DeliveryMode}\n"));
+        if (!string.IsNullOrEmpty(order.CustomerPhone))
+            Emit(enc.GetBytes($"Phone: {order.CustomerPhone}\n"));
+        Emit(enc.GetBytes(Separator() + "\n\n"));
+
+        Emit(bold_on);
+        if (order.Items != null)
+        {
+            foreach (var item in order.Items)
+            {
+                Emit(enc.GetBytes($"{item.Quantity}x  {item.ItemName}\n"));
+                if (!string.IsNullOrEmpty(item.Options))
+                    Emit(enc.GetBytes($"       [{item.Options}]\n"));
+                if (!string.IsNullOrEmpty(item.SpecialInstructions))
+                    Emit(enc.GetBytes($"       *{item.SpecialInstructions}\n"));
+            }
+        }
+        Emit(bold_off);
+
+        if (!string.IsNullOrEmpty(order.DeliveryNote))
+        {
+            Emit(enc.GetBytes("\n"));
+            Emit(bold_on);
+            Emit(enc.GetBytes($"NOTE: {order.DeliveryNote}\n"));
+            Emit(bold_off);
+        }
+
+        Emit(enc.GetBytes("\n" + Separator() + "\n"));
+        Emit(center);
+        int totalItems = order.Items?.Sum(i => i.Quantity) ?? 0;
+        Emit(enc.GetBytes($"Items: {totalItems}\n"));
+        Emit(feedCut);
+
+        RawPrinterHelper.SendBytesToPrinter(printerName, ms.ToArray());
+    }
+
+    // DTO classes for delivery KOT API response
+    private class DeliveryKotOrder
+    {
+        public int Id { get; set; }
+        public string? PlatformName { get; set; }
+        public string? PlatformOrderId { get; set; }
+        public string? CustomerPhone { get; set; }
+        public string? CustomerAddress { get; set; }
+        public string? DeliveryMode { get; set; }
+        public string? DeliveryNote { get; set; }
+        public decimal OrderTotal { get; set; }
+        public string? PaymentMethod { get; set; }
+        public DateTime ReceivedAt { get; set; }
+        public List<DeliveryKotItem>? Items { get; set; }
+    }
+
+    private class DeliveryKotItem
+    {
+        public string? ItemName { get; set; }
+        public int Quantity { get; set; }
+        public decimal PricePerItem { get; set; }
+        public decimal TotalPrice { get; set; }
+        public string? SpecialInstructions { get; set; }
+        public string? Options { get; set; }
+        public string? ItemType { get; set; }
+    }
 
     public class CartItem
     {
