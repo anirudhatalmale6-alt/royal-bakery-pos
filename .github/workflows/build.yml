@@ -60,59 +60,50 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.26.1.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.26.1.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.26.1.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.26.1.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.26.1.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.27.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.27.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.27.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.27.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.27.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.26.1
-          name: v1.26.1 - PickMe Integration + GRN Stock Fix
+          tag_name: v1.27
+          name: v1.27 - Uber Eats Integration + Dual Printer Support
           body: |
-            ## Changes in v1.26.1 - PickMe Integration + GRN Stock Fix
+            ## Changes in v1.27
 
             ### API (RoyalBakeryAPI)
-            - **GRN FIFO DEDUCTION**: PickMe bakery orders now deduct from GRNItems.CurrentQuantity (FIFO, oldest first) — same pattern as in-store sales
-            - **LEGACY REF_ID SUPPORT**: Supports both new format (B-123, R-45) and legacy format (44383_B123, 44383_R45)
-            - **PICKME POLLING SERVICE**: Background service polls PickMe API every 30 seconds for new orders
-            - **AUTO-SAVE ORDERS**: When "Merchant Confirmed" order detected, automatically creates RestaurantSale/Sale records
-            - **BAKERY STOCK DEDUCTION**: Bakery items from PickMe orders deduct both Stock.Quantity and GRNItems.CurrentQuantity
-            - **DELIVERY ORDER TRACKING**: New DeliveryOrders + DeliveryOrderItems tables track all platform orders
-            - **KOT ENDPOINT**: GET /api/delivery/pending-kot for Restaurant POS to fetch orders needing KOT print
-            - **DELIVERY API**: GET /api/delivery/orders with platform/date filters for Admin Panel
-            - **REF_ID MAPPING**: Items mapped via ref_id format B-{id} (bakery) and R-{id} (restaurant)
-            - **MULTI-ACCOUNT SUPPORT**: Supports 2 PickMe accounts (bakery+restaurant and restaurant-only)
+            - **UBER EATS POLLING SERVICE**: Background service polls Uber Eats API for new orders
+            - **UBER OAUTH2 AUTH**: Automatic token management with 30-day caching
+            - **AUTO-ACCEPT ORDERS**: New Uber Eats orders are automatically accepted via API
+            - **UBER STOCK DEDUCTION**: Same as PickMe — bakery items deduct Stock + GRNItems (FIFO)
+            - **DUAL PLATFORM SUPPORT**: Both PickMe and Uber Eats run simultaneously
+            - **UBER MULTI-ACCOUNT**: Supports 2 Uber accounts (bakery+restaurant and restaurant-only)
 
             ### Restaurant POS
-            - **AUTO KOT PRINTING**: Polls API every 5 seconds, auto-prints KOT for new delivery orders
-            - **DELIVERY KOT FORMAT**: Shows platform name, order ID, delivery mode, phone, items with options/notes
-            - **API URL CONFIG**: New terminal.config setting ApiUrl for API connection
-
-            ### Admin Panel
-            - **DELIVERY ORDERS PAGE**: New page showing all delivery platform orders
-            - **PLATFORM FILTERS**: Filter by PickMe/UberEats and date
-            - **ORDER DETAIL VIEW**: Click any order to see full details (items, customer, status, KOT status)
-            - **SUMMARY CARDS**: Total orders, revenue, PickMe count, Uber count
+            - **DUAL PRINTER SUPPORT**: Two separate printers — Bill printer (customer receipt) and KOT printer (kitchen)
+            - **DINE-IN/TAKEAWAY**: Prints BOTH bill + KOT (customer gets receipt, kitchen gets order ticket)
+            - **PICKME/UBER ORDERS**: Prints KOT ONLY (no customer bill needed for delivery)
+            - **BILL PRINTER CONFIG**: New terminal.config setting BillPrinter for customer receipt printer
 
             ### Configuration
-            - appsettings.json: PickMe API keys, sandbox/live URLs, poll interval
-            - terminal.config: ApiUrl setting for Restaurant POS
+            - appsettings.json: New UberEats section (ClientId, ClientSecret, StoreId per account)
+            - terminal.config: New BillPrinter setting for customer receipt printer
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.26.1.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.26.1.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.26.1.zip** — API server
-            - **RoyalBakeryAdmin-v1.26.1.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.26.1.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.27.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.27.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.27.zip** — API server
+            - **RoyalBakeryAdmin-v1.27.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.27.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.26.1.zip
-            RoyalBakerySalesman-v1.26.1.zip
-            RoyalBakeryAPI-v1.26.1.zip
-            RoyalBakeryAdmin-v1.26.1.zip
-            RoyalBakeryRestaurant-v1.26.1.zip
+            RoyalBakeryCashier-v1.27.zip
+            RoyalBakerySalesman-v1.27.zip
+            RoyalBakeryAPI-v1.27.zip
+            RoyalBakeryAdmin-v1.27.zip
+            RoyalBakeryRestaurant-v1.27.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

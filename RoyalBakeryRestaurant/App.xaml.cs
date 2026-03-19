@@ -9,6 +9,13 @@ public partial class App : Application
     public static int LoggedInUserId { get; set; }
 
     /// <summary>
+    /// Bill printer name for customer receipts.
+    /// Set via terminal.config: BillPrinter=EPSON TM-T20 Receipt
+    /// If not set, auto-detects via RawPrinterHelper.FindThermalPrinter()
+    /// </summary>
+    public static string BillPrinterName { get; set; } = "";
+
+    /// <summary>
     /// KOT printer name (separate thermal printer for kitchen orders).
     /// Set via terminal.config: KOTPrinter=EPSON TM-T82 Receipt
     /// </summary>
@@ -71,6 +78,8 @@ public partial class App : Application
                         DbUser = val;
                     else if (key.Equals("DbPassword", StringComparison.OrdinalIgnoreCase))
                         DbPassword = val;
+                    else if (key.Equals("BillPrinter", StringComparison.OrdinalIgnoreCase))
+                        BillPrinterName = val;
                     else if (key.Equals("KOTPrinter", StringComparison.OrdinalIgnoreCase))
                         KOTPrinterName = val;
                     else if (key.Equals("ApiUrl", StringComparison.OrdinalIgnoreCase))

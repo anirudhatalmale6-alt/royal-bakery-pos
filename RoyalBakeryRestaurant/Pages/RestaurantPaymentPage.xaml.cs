@@ -182,13 +182,22 @@ public partial class RestaurantPaymentPage : ContentPage
                 return s;
             });
 
-            // Print invoice (outside strategy)
             if (sale != null)
-                await PrintInvoice(sale, cash, card, change);
+            {
+                bool isDelivery = _orderSource == "Pickme Food" || _orderSource == "Ubereats";
 
-            // Print KOT for Pickme/Ubereats orders
-            if (sale != null && (_orderSource == "Pickme Food" || _orderSource == "Ubereats"))
-                await PrintKOT(sale);
+                if (!isDelivery)
+                {
+                    // Dine-in / Takeaway: print BOTH bill (customer) + KOT (kitchen)
+                    await PrintInvoice(sale, cash, card, change);
+                    await PrintKOT(sale);
+                }
+                else
+                {
+                    // Delivery orders (PickMe/Uber): KOT only
+                    await PrintKOT(sale);
+                }
+            }
 
             LastPaymentCompleted = true;
             await Navigation.PopModalAsync(false); // no animation
@@ -212,7 +221,10 @@ public partial class RestaurantPaymentPage : ContentPage
 
         try
         {
-            string printerName = Preferences.Get("ThermalPrinterName", "");
+            // Use BillPrinter from config if set, otherwise auto-detect
+            string printerName = App.BillPrinterName;
+            if (string.IsNullOrEmpty(printerName))
+                printerName = Preferences.Get("ThermalPrinterName", "");
             if (string.IsNullOrEmpty(printerName))
             {
                 printerName = RawPrinterHelper.FindThermalPrinter() ?? "";

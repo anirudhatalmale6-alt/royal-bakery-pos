@@ -24,9 +24,11 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
-// Register PickMe polling background service
+// Register delivery platform polling background services
 builder.Services.AddHttpClient("PickMe");
 builder.Services.AddHostedService<PickMePollingService>();
+builder.Services.AddHttpClient("UberEats");
+builder.Services.AddHostedService<UberEatsPollingService>();
 
 var app = builder.Build();
 
