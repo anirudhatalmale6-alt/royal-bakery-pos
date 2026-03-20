@@ -48,7 +48,9 @@ public class UberEatsPollingService : BackgroundService
 
         var pollInterval = _config.GetValue<int>("UberEats:PollIntervalSeconds", 30);
 
-        _logger.LogInformation("Uber Eats polling started. Interval: {Interval}s", pollInterval);
+        var sandboxMode = _config.GetValue<bool>("UberEats:SandboxMode");
+        _logger.LogInformation("Uber Eats polling started. Mode: {Mode}, Interval: {Interval}s",
+            sandboxMode ? "SANDBOX" : "LIVE", pollInterval);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -67,7 +69,10 @@ public class UberEatsPollingService : BackgroundService
 
     private async Task PollAllAccounts(CancellationToken ct)
     {
-        var baseUrl = _config["UberEats:BaseUrl"] ?? "https://api.uber.com/v1";
+        var sandbox = _config.GetValue<bool>("UberEats:SandboxMode");
+        var baseUrl = sandbox
+            ? (_config["UberEats:SandboxBaseUrl"] ?? "https://test-api.uber.com/v1")
+            : (_config["UberEats:LiveBaseUrl"] ?? "https://api.uber.com/v1");
         var accounts = _config.GetSection("UberEats:Accounts").GetChildren();
 
         foreach (var account in accounts)
@@ -113,7 +118,10 @@ public class UberEatsPollingService : BackgroundService
             return cached.Token;
         }
 
-        var tokenUrl = _config["UberEats:TokenUrl"] ?? "https://auth.uber.com/oauth/v2/token";
+        var sandbox = _config.GetValue<bool>("UberEats:SandboxMode");
+        var tokenUrl = sandbox
+            ? (_config["UberEats:SandboxTokenUrl"] ?? "https://sandbox-login.uber.com/oauth/v2/token")
+            : (_config["UberEats:LiveTokenUrl"] ?? "https://auth.uber.com/oauth/v2/token");
         var client = _httpClientFactory.CreateClient("UberEats");
 
         var requestBody = new FormUrlEncodedContent(new Dictionary<string, string>
