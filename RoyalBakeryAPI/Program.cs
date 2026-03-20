@@ -349,5 +349,8 @@ Console.WriteLine("  GET  /api/delivery/pending-kot    (for Restaurant POS KOT)"
 Console.WriteLine("  POST /api/delivery/{id}/kot-done  (mark KOT printed)");
 Console.WriteLine("  GET  /api/delivery/orders          (delivery order list)");
 Console.WriteLine("  GET  /api/delivery/orders/{id}     (delivery order detail)");
+Console.WriteLine("  GET  /api/uber/authorize?account=0 (start Uber OAuth in browser)");
+Console.WriteLine("  GET  /api/uber/callback            (OAuth redirect handler)");
+Console.WriteLine("  GET  /api/uber/status               (Uber config status)");
 
 app.Run();

@@ -60,19 +60,19 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.27.1.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.27.1.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.27.1.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.27.1.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.27.1.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.27.2.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.27.2.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.27.2.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.27.2.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.27.2.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.27.1
-          name: v1.27.1 - Uber Eats Integration + Dual Printer Support
+          tag_name: v1.27.2
+          name: v1.27.2 - Uber Eats Integration + Dual Printer Support
           body: |
-            ## Changes in v1.27.1
+            ## Changes in v1.27.2
 
             ### API (RoyalBakeryAPI)
             - **UBER EATS POLLING SERVICE**: Background service polls Uber Eats API for new orders
@@ -93,17 +93,17 @@ jobs:
             - terminal.config: New BillPrinter setting for customer receipt printer
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.27.1.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.27.1.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.27.1.zip** — API server
-            - **RoyalBakeryAdmin-v1.27.1.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.27.1.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.27.2.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.27.2.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.27.2.zip** — API server
+            - **RoyalBakeryAdmin-v1.27.2.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.27.2.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.27.1.zip
-            RoyalBakerySalesman-v1.27.1.zip
-            RoyalBakeryAPI-v1.27.1.zip
-            RoyalBakeryAdmin-v1.27.1.zip
-            RoyalBakeryRestaurant-v1.27.1.zip
+            RoyalBakeryCashier-v1.27.2.zip
+            RoyalBakerySalesman-v1.27.2.zip
+            RoyalBakeryAPI-v1.27.2.zip
+            RoyalBakeryAdmin-v1.27.2.zip
+            RoyalBakeryRestaurant-v1.27.2.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
