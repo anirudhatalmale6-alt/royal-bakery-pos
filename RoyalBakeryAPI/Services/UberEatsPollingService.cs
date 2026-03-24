@@ -124,18 +124,43 @@ public class UberEatsPollingService : BackgroundService
             : (_config["UberEats:LiveTokenUrl"] ?? "https://auth.uber.com/oauth/v2/token");
         var client = _httpClientFactory.CreateClient("UberEats");
 
-        var requestBody = new FormUrlEncodedContent(new Dictionary<string, string>
+        // Try multiple scope combinations — production and sandbox apps accept different scopes
+        string[] scopeSets = new[]
         {
-            ["client_id"] = clientId,
-            ["client_secret"] = clientSecret,
-            ["grant_type"] = "client_credentials",
-            ["scope"] = "eats.store.orders.read eats.order eats.store"
-        });
+            "eats.store.orders.read eats.order eats.store",  // sandbox scopes
+            "eats.deliveries eats.store eats.store.orders.read",  // production scopes v1
+            "eats.deliveries",  // minimal production scope
+        };
 
-        var response = await client.PostAsync(tokenUrl, requestBody, ct);
+        HttpResponseMessage response = null!;
+        string err = "";
+
+        foreach (var scope in scopeSets)
+        {
+            var requestBody = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["client_id"] = clientId,
+                ["client_secret"] = clientSecret,
+                ["grant_type"] = "client_credentials",
+                ["scope"] = scope
+            });
+
+            response = await client.PostAsync(tokenUrl, requestBody, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Uber Eats: Token obtained with scope: {Scope}", scope);
+                break;
+            }
+
+            err = await response.Content.ReadAsStringAsync(ct);
+
+            // If error is not scope-related, stop trying
+            if (!err.Contains("invalid_scope"))
+                break;
+        }
+
         if (!response.IsSuccessStatusCode)
         {
-            var err = await response.Content.ReadAsStringAsync(ct);
             _logger.LogWarning("Uber Eats token request failed: {Status} — {Error}", response.StatusCode, err);
             return null;
         }

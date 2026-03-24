@@ -381,6 +381,31 @@ public class PickMePollingService : BackgroundService
     }
 }
 
+// ===== JSON Converter for number-or-string fields =====
+
+/// <summary>
+/// Handles JSON fields that can be either a number or a string.
+/// PickMe sends pickme_job_id as a number, but we store it as string.
+/// </summary>
+public class FlexibleStringConverter : JsonConverter<string?>
+{
+    public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return reader.TokenType switch
+        {
+            JsonTokenType.String => reader.GetString(),
+            JsonTokenType.Number => reader.GetInt64().ToString(),
+            JsonTokenType.Null => null,
+            _ => reader.GetString()
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value);
+    }
+}
+
 // ===== PickMe API Response Models =====
 
 public class PickMeJobListResponse
@@ -411,6 +436,7 @@ public class PickMePagination
 public class PickMeJob
 {
     [JsonPropertyName("pickme_job_id")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
     public string? PickmeJobId { get; set; }
 
     [JsonPropertyName("customer")]

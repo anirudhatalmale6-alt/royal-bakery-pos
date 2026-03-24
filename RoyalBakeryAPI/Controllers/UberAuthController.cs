@@ -69,10 +69,32 @@ public class UberAuthController : ControllerBase
     /// Exchanges the authorization code for an access token.
     /// </summary>
     [HttpGet("callback")]
-    public async Task<IActionResult> Callback([FromQuery] string code, [FromQuery] string state = "0")
+    public async Task<IActionResult> Callback(
+        [FromQuery] string? code = null,
+        [FromQuery] string state = "0",
+        [FromQuery] string? error = null,
+        [FromQuery(Name = "error_description")] string? errorDescription = null)
     {
+        // Handle Uber error redirects
+        if (!string.IsNullOrEmpty(error))
+        {
+            return Content($@"
+<html><body style='font-family:Arial; padding:40px; background:#1a1a1a; color:white;'>
+<h1 style='color:#ff4444;'>Authorization Error</h1>
+<p>Error: {error}</p>
+<p>Description: {errorDescription}</p>
+<p>Please check that the Redirect URI <code>http://localhost:5000/api/uber/callback</code> is added in your Uber Developer Dashboard app settings.</p>
+</body></html>", "text/html");
+        }
+
         if (string.IsNullOrEmpty(code))
-            return BadRequest(new { message = "No authorization code received from Uber" });
+        {
+            return Content($@"
+<html><body style='font-family:Arial; padding:40px; background:#1a1a1a; color:white;'>
+<h1 style='color:#ff4444;'>No Authorization Code</h1>
+<p>Uber did not send an authorization code. Please try again from: <a href='/api/uber/authorize?account=0' style='color:#4CAF50;'>Authorize Account 0</a></p>
+</body></html>", "text/html");
+        }
 
         int accountIndex = int.TryParse(state, out var idx) ? idx : 0;
         var accounts = _config.GetSection("UberEats:Accounts").GetChildren().ToList();
