@@ -381,7 +381,7 @@ public class PickMePollingService : BackgroundService
     }
 }
 
-// ===== JSON Converter for number-or-string fields =====
+// ===== JSON Converters for flexible PickMe API fields =====
 
 /// <summary>
 /// Handles JSON fields that can be either a number or a string.
@@ -403,6 +403,51 @@ public class FlexibleStringConverter : JsonConverter<string?>
     public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
     {
         writer.WriteStringValue(value);
+    }
+}
+
+/// <summary>
+/// Handles JSON fields that can be either a number or a string but should deserialize to decimal.
+/// PickMe sends item.total as a string (e.g. "550.00") but we need it as decimal.
+/// </summary>
+public class FlexibleDecimalConverter : JsonConverter<decimal>
+{
+    public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return reader.TokenType switch
+        {
+            JsonTokenType.Number => reader.GetDecimal(),
+            JsonTokenType.String => decimal.TryParse(reader.GetString(), System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : 0m,
+            _ => 0m
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
+    {
+        writer.WriteNumberValue(value);
+    }
+}
+
+/// <summary>
+/// Handles JSON fields that can be either a number or a string but should deserialize to int.
+/// PickMe may send qty/id as strings.
+/// </summary>
+public class FlexibleIntConverter : JsonConverter<int>
+{
+    public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return reader.TokenType switch
+        {
+            JsonTokenType.Number => reader.GetInt32(),
+            JsonTokenType.String => int.TryParse(reader.GetString(), out var i) ? i : 0,
+            _ => 0
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+    {
+        writer.WriteNumberValue(value);
     }
 }
 
@@ -500,18 +545,22 @@ public class PickMeOrder
 public class PickMeOrderItem
 {
     [JsonPropertyName("id")]
+    [JsonConverter(typeof(FlexibleIntConverter))]
     public int Id { get; set; }
 
     [JsonPropertyName("ref_id")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
     public string? RefId { get; set; }
 
     [JsonPropertyName("name")]
     public string? Name { get; set; }
 
     [JsonPropertyName("qty")]
+    [JsonConverter(typeof(FlexibleIntConverter))]
     public int Qty { get; set; }
 
     [JsonPropertyName("total")]
+    [JsonConverter(typeof(FlexibleDecimalConverter))]
     public decimal Total { get; set; }
 
     [JsonPropertyName("sp_ins")]
@@ -536,18 +585,22 @@ public class PickMeSubOption
     public string? Name { get; set; }
 
     [JsonPropertyName("qty")]
+    [JsonConverter(typeof(FlexibleIntConverter))]
     public int Qty { get; set; }
 
     [JsonPropertyName("price")]
+    [JsonConverter(typeof(FlexibleDecimalConverter))]
     public decimal Price { get; set; }
 
     [JsonPropertyName("ref_id")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
     public string? RefId { get; set; }
 }
 
 public class PickMePayment
 {
     [JsonPropertyName("total")]
+    [JsonConverter(typeof(FlexibleDecimalConverter))]
     public decimal Total { get; set; }
 
     [JsonPropertyName("method")]

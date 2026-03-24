@@ -125,39 +125,55 @@ public class UberEatsPollingService : BackgroundService
         var client = _httpClientFactory.CreateClient("UberEats");
 
         // Try multiple scope combinations — production and sandbox apps accept different scopes
-        string[] scopeSets = new[]
+        // Also try without scope (lets Uber return all granted scopes)
+        string?[] scopeSets = new string?[]
         {
             "eats.store.orders.read eats.order eats.store",  // sandbox scopes
             "eats.deliveries eats.store eats.store.orders.read",  // production scopes v1
             "eats.deliveries",  // minimal production scope
+            null,  // no scope — Uber returns all granted scopes for the app
         };
+
+        // Also try both token URLs for production (login.uber.com and auth.uber.com)
+        var tokenUrls = sandbox
+            ? new[] { tokenUrl }
+            : new[] { tokenUrl, "https://login.uber.com/oauth/v2/token", "https://auth.uber.com/oauth/v2/token" };
+        // Deduplicate
+        tokenUrls = tokenUrls.Distinct().ToArray();
 
         HttpResponseMessage response = null!;
         string err = "";
 
-        foreach (var scope in scopeSets)
+        foreach (var url in tokenUrls)
         {
-            var requestBody = new FormUrlEncodedContent(new Dictionary<string, string>
+            foreach (var scope in scopeSets)
             {
-                ["client_id"] = clientId,
-                ["client_secret"] = clientSecret,
-                ["grant_type"] = "client_credentials",
-                ["scope"] = scope
-            });
+                var formFields = new Dictionary<string, string>
+                {
+                    ["client_id"] = clientId,
+                    ["client_secret"] = clientSecret,
+                    ["grant_type"] = "client_credentials",
+                };
+                if (scope != null)
+                    formFields["scope"] = scope;
 
-            response = await client.PostAsync(tokenUrl, requestBody, ct);
-            if (response.IsSuccessStatusCode)
-            {
-                _logger.LogInformation("Uber Eats: Token obtained with scope: {Scope}", scope);
-                break;
+                var requestBody = new FormUrlEncodedContent(formFields);
+
+                response = await client.PostAsync(url, requestBody, ct);
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Uber Eats: Token obtained from {Url} with scope: {Scope}", url, scope ?? "(all)");
+                    goto tokenObtained;
+                }
+
+                err = await response.Content.ReadAsStringAsync(ct);
+
+                // If error is not scope-related, try next URL
+                if (!err.Contains("invalid_scope"))
+                    break;
             }
-
-            err = await response.Content.ReadAsStringAsync(ct);
-
-            // If error is not scope-related, stop trying
-            if (!err.Contains("invalid_scope"))
-                break;
         }
+        tokenObtained:
 
         if (!response.IsSuccessStatusCode)
         {

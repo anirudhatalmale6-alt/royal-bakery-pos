@@ -60,50 +60,37 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.27.3.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.27.3.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.27.3.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.27.3.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.27.3.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.27.4.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.27.4.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.27.4.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.27.4.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.27.4.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.27.3
-          name: v1.27.3 - Uber Eats Integration + Dual Printer Support
+          tag_name: v1.27.4
+          name: v1.27.4 - PickMe + Uber Eats Bug Fixes
           body: |
-            ## Changes in v1.27.3
+            ## Changes in v1.27.4
 
-            ### API (RoyalBakeryAPI)
-            - **UBER EATS POLLING SERVICE**: Background service polls Uber Eats API for new orders
-            - **UBER OAUTH2 AUTH**: Automatic token management with 30-day caching
-            - **AUTO-ACCEPT ORDERS**: New Uber Eats orders are automatically accepted via API
-            - **UBER STOCK DEDUCTION**: Same as PickMe — bakery items deduct Stock + GRNItems (FIFO)
-            - **DUAL PLATFORM SUPPORT**: Both PickMe and Uber Eats run simultaneously
-            - **UBER MULTI-ACCOUNT**: Supports 2 Uber accounts (bakery+restaurant and restaurant-only)
-
-            ### Restaurant POS
-            - **DUAL PRINTER SUPPORT**: Two separate printers — Bill printer (customer receipt) and KOT printer (kitchen)
-            - **DINE-IN/TAKEAWAY**: Prints BOTH bill + KOT (customer gets receipt, kitchen gets order ticket)
-            - **PICKME/UBER ORDERS**: Prints KOT ONLY (no customer bill needed for delivery)
-            - **BILL PRINTER CONFIG**: New terminal.config setting BillPrinter for customer receipt printer
-
-            ### Configuration
-            - appsettings.json: New UberEats section (ClientId, ClientSecret, StoreId per account)
-            - terminal.config: New BillPrinter setting for customer receipt printer
+            ### Bug Fixes
+            - **PICKME JSON FIX**: Fixed PickMe API deserialization — item.total sent as string, qty/id may also be strings. Added FlexibleDecimalConverter and FlexibleIntConverter to handle all PickMe field type mismatches
+            - **UBER EATS TOKEN FIX**: Fixed production OAuth token URL (login.uber.com instead of auth.uber.com). Tries multiple URLs and scope combinations including scopeless request
+            - **UBER OAUTH SCOPE FIX**: Production authorize flow now uses correct scopes (eats.store+eats.order+eats.store.orders.read) instead of sandbox-only eats.pos_provisioning
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.27.3.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.27.3.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.27.3.zip** — API server
-            - **RoyalBakeryAdmin-v1.27.3.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.27.3.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.27.4.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.27.4.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.27.4.zip** — API server
+            - **RoyalBakeryAdmin-v1.27.4.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.27.4.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.27.3.zip
-            RoyalBakerySalesman-v1.27.3.zip
-            RoyalBakeryAPI-v1.27.3.zip
-            RoyalBakeryAdmin-v1.27.3.zip
-            RoyalBakeryRestaurant-v1.27.3.zip
+            RoyalBakeryCashier-v1.27.4.zip
+            RoyalBakerySalesman-v1.27.4.zip
+            RoyalBakeryAPI-v1.27.4.zip
+            RoyalBakeryAdmin-v1.27.4.zip
+            RoyalBakeryRestaurant-v1.27.4.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

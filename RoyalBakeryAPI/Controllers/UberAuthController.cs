@@ -51,10 +51,13 @@ public class UberAuthController : ControllerBase
         var sandbox = _config.GetValue<bool>("UberEats:SandboxMode");
         var authBase = sandbox ? "https://sandbox-login.uber.com" : "https://login.uber.com";
 
+        // Use eats.store scope for production (eats.pos_provisioning is sandbox-only)
+        var scope = sandbox ? "eats.pos_provisioning" : "eats.store+eats.order+eats.store.orders.read";
+
         var authUrl = $"{authBase}/oauth/v2/authorize" +
             $"?client_id={clientId}" +
             $"&response_type=code" +
-            $"&scope=eats.pos_provisioning" +
+            $"&scope={scope}" +
             $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
             $"&state={account}";
 
