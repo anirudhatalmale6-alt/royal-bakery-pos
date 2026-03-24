@@ -236,6 +236,48 @@ public class RestaurantSaleItem
     public RestaurantSale? Sale { get; set; }
 }
 
+// ===== Pending Stock (Online order shortages) =====
+
+[Table("PendingStocks")]
+public class PendingStock
+{
+    [Key]
+    public int Id { get; set; }
+    public int DeliveryOrderId { get; set; }
+    [ForeignKey("DeliveryOrderId")]
+    public DeliveryOrder? DeliveryOrder { get; set; }
+    public int MenuItemId { get; set; }
+    [ForeignKey("MenuItemId")]
+    public MenuItem? MenuItem { get; set; }
+    /// <summary>Original shortage (negative value, e.g. -10)</summary>
+    public int PendingQuantity { get; set; }
+    /// <summary>Remaining shortage after GRN settlements</summary>
+    public int CurrentPendingQuantity { get; set; }
+    [MaxLength(20)]
+    public string Status { get; set; } = "ACTIVE";
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public List<PendingStockClearance> Clearances { get; set; } = new();
+}
+
+[Table("PendingStockClearances")]
+public class PendingStockClearance
+{
+    [Key]
+    public int Id { get; set; }
+    public int PendingStockId { get; set; }
+    [ForeignKey("PendingStockId")]
+    public PendingStock? PendingStock { get; set; }
+    public int GRNId { get; set; }
+    [ForeignKey("GRNId")]
+    public GRN? GRN { get; set; }
+    public int GRNItemId { get; set; }
+    [ForeignKey("GRNItemId")]
+    public GRNItem? GRNItem { get; set; }
+    public int MenuItemId { get; set; }
+    public int QuantityUsed { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+}
+
 // Bakery Sales entity for delivery stock deduction
 [Table("Sales")]
 public class Sale

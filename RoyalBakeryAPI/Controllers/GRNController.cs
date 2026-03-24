@@ -188,56 +188,106 @@ public class GRNController : ControllerBase
         if (request.Items == null || request.Items.Count == 0)
             return BadRequest(new { message = "GRN must have at least one item" });
 
-        var grnNumber = $"GRN-{DateTime.Now:yyyyMMddHHmmss}";
-
-        var grn = new GRN
+        using var tx = await _db.Database.BeginTransactionAsync();
+        try
         {
-            GRNNumber = grnNumber,
-            CreatedAt = DateTime.Now,
-            Items = request.Items.Select(i => new GRNItem
-            {
-                MenuItemId = i.MenuItemId,
-                Quantity = i.Quantity,
-                Price = i.Price,
-                CurrentQuantity = i.Quantity
-            }).ToList()
-        };
+            var grnNumber = $"GRN-{DateTime.Now:yyyyMMddHHmmss}";
 
-        _db.GRNs.Add(grn);
-
-        // Update stock for each item
-        foreach (var item in request.Items)
-        {
-            var stock = await _db.Stocks.FirstOrDefaultAsync(s => s.MenuItemId == item.MenuItemId);
-            if (stock != null)
+            var grn = new GRN
             {
-                stock.Quantity += item.Quantity;
-            }
-            else
-            {
-                _db.Stocks.Add(new Stock
+                GRNNumber = grnNumber,
+                CreatedAt = DateTime.Now,
+                Items = request.Items.Select(i => new GRNItem
                 {
-                    MenuItemId = item.MenuItemId,
-                    Quantity = item.Quantity
-                });
-            }
-        }
+                    MenuItemId = i.MenuItemId,
+                    Quantity = i.Quantity,
+                    Price = i.Price,
+                    CurrentQuantity = i.Quantity
+                }).ToList()
+            };
 
-        await _db.SaveChangesAsync();
+            _db.GRNs.Add(grn);
+            await _db.SaveChangesAsync(); // Save to get GRN + GRNItem IDs
 
-        return CreatedAtAction(nameof(GetById), new { id = grn.Id }, new GRNResponse
-        {
-            Id = grn.Id,
-            GRNNumber = grn.GRNNumber,
-            CreatedAt = grn.CreatedAt,
-            Items = grn.Items.Select(i => new GRNItemResponse
+            // Update stock and settle pending stocks for each item
+            foreach (var item in request.Items)
             {
-                Id = i.Id,
-                MenuItemId = i.MenuItemId,
-                Quantity = i.Quantity,
-                Price = i.Price,
-                CurrentQuantity = i.CurrentQuantity
-            }).ToList()
-        });
+                var stock = await _db.Stocks.FirstOrDefaultAsync(s => s.MenuItemId == item.MenuItemId);
+                if (stock != null)
+                {
+                    stock.Quantity += item.Quantity;
+                }
+                else
+                {
+                    _db.Stocks.Add(new Stock
+                    {
+                        MenuItemId = item.MenuItemId,
+                        Quantity = item.Quantity
+                    });
+                }
+
+                // Settle pending stocks (FIFO) for this item
+                var grnItem = grn.Items.First(gi => gi.MenuItemId == item.MenuItemId);
+                int grnQtyAvailable = item.Quantity;
+
+                var activePending = await _db.PendingStocks
+                    .Where(ps => ps.MenuItemId == item.MenuItemId && ps.Status == "ACTIVE")
+                    .OrderBy(ps => ps.Id) // FIFO
+                    .ToListAsync();
+
+                foreach (var pending in activePending)
+                {
+                    if (grnQtyAvailable <= 0) break;
+
+                    // CurrentPendingQuantity is negative (e.g. -10)
+                    // We need to add GRN quantity to move it toward 0
+                    int shortage = Math.Abs(pending.CurrentPendingQuantity);
+                    int settleQty = Math.Min(grnQtyAvailable, shortage);
+
+                    pending.CurrentPendingQuantity += settleQty; // e.g. -10 + 5 = -5
+
+                    if (pending.CurrentPendingQuantity >= 0)
+                        pending.Status = "SETTLED";
+
+                    // Deduct from GRN item's available quantity
+                    grnItem.CurrentQuantity -= settleQty;
+                    grnQtyAvailable -= settleQty;
+
+                    // Record the clearance
+                    _db.PendingStockClearances.Add(new PendingStockClearance
+                    {
+                        PendingStockId = pending.Id,
+                        GRNId = grn.Id,
+                        GRNItemId = grnItem.Id,
+                        MenuItemId = item.MenuItemId,
+                        QuantityUsed = settleQty,
+                        CreatedAt = DateTime.Now
+                    });
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+
+            return CreatedAtAction(nameof(GetById), new { id = grn.Id }, new GRNResponse
+            {
+                Id = grn.Id,
+                GRNNumber = grn.GRNNumber,
+                CreatedAt = grn.CreatedAt,
+                Items = grn.Items.Select(i => new GRNItemResponse
+                {
+                    Id = i.Id,
+                    MenuItemId = i.MenuItemId,
+                    Quantity = i.Quantity,
+                    Price = i.Price,
+                    CurrentQuantity = i.CurrentQuantity
+                }).ToList()
+            });
+        }
+        catch (Exception ex)
+        {
+            await tx.RollbackAsync();
+            return StatusCode(500, new { message = $"Error creating GRN: {ex.Message}" });
+        }
     }
 }

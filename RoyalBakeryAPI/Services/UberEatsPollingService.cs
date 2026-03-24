@@ -382,7 +382,10 @@ public class UberEatsPollingService : BackgroundService
         }
 
         // Create bakery Sale + deduct stock if there are bakery items
+        // Online orders (PickMe/UberEats) can go negative — shortages tracked in PendingStocks
         int? bakerySaleId = null;
+        var pendingStockItems = new List<(int menuItemId, int shortage)>();
+
         if (bakeryItems.Count > 0 && hasBakery)
         {
             var nextNum = db.Sales.Any() ? db.Sales.Max(s => s.Id) + 1 : 1;
@@ -408,12 +411,15 @@ public class UberEatsPollingService : BackgroundService
             db.Sales.Add(sale);
 
             // Deduct stock + GRNItems CurrentQuantity (FIFO) for each bakery item
+            // Allow stock to go negative for online orders — track shortage in PendingStocks
             foreach (var bi in bakeryItems)
             {
                 var stock = await db.Stocks.FirstOrDefaultAsync(s => s.MenuItemId == bi.localId, ct);
+                int availableStock = stock?.Quantity ?? 0;
+
                 if (stock != null)
                 {
-                    stock.Quantity = Math.Max(0, stock.Quantity - bi.qty);
+                    stock.Quantity -= bi.qty; // Can go negative for online orders
                 }
 
                 var grnItems = await db.GRNItems
@@ -428,6 +434,13 @@ public class UberEatsPollingService : BackgroundService
                     int deduct = Math.Min(gi.CurrentQuantity, remaining);
                     gi.CurrentQuantity -= deduct;
                     remaining -= deduct;
+                }
+
+                // Track shortage if stock was insufficient
+                if (availableStock < bi.qty)
+                {
+                    int shortage = availableStock - bi.qty; // negative value
+                    pendingStockItems.Add((bi.localId, shortage));
                 }
             }
 
@@ -463,6 +476,26 @@ public class UberEatsPollingService : BackgroundService
 
         db.DeliveryOrders.Add(deliveryOrder);
         await db.SaveChangesAsync(ct);
+
+        // Create PendingStock records for any stock shortages
+        if (pendingStockItems.Count > 0)
+        {
+            foreach (var (menuItemId, shortage) in pendingStockItems)
+            {
+                db.PendingStocks.Add(new PendingStock
+                {
+                    DeliveryOrderId = deliveryOrder.Id,
+                    MenuItemId = menuItemId,
+                    PendingQuantity = shortage,
+                    CurrentPendingQuantity = shortage,
+                    Status = "ACTIVE",
+                    CreatedAt = DateTime.Now
+                });
+            }
+            await db.SaveChangesAsync(ct);
+            _logger.LogInformation("Uber Eats order {OrderId}: Created {Count} pending stock records",
+                orderId, pendingStockItems.Count);
+        }
 
         _logger.LogInformation("Uber Eats order {OrderId} saved. Restaurant items: {RCount}, Bakery items: {BCount}",
             orderId, restaurantItems.Count, bakeryItems.Count);

@@ -30,6 +30,10 @@ public class BakeryDbContext : DbContext
     public DbSet<Sale> Sales { get; set; }
     public DbSet<SaleItem> SaleItems { get; set; }
 
+    // Pending stock (online order shortages settled by GRNs)
+    public DbSet<PendingStock> PendingStocks { get; set; }
+    public DbSet<PendingStockClearance> PendingStockClearances { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -92,6 +96,37 @@ public class BakeryDbContext : DbContext
             .WithMany(s => s.Items)
             .HasForeignKey(si => si.RestaurantSaleId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Pending stock relationships
+        modelBuilder.Entity<PendingStock>()
+            .HasOne(ps => ps.DeliveryOrder)
+            .WithMany()
+            .HasForeignKey(ps => ps.DeliveryOrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PendingStock>()
+            .HasOne(ps => ps.MenuItem)
+            .WithMany()
+            .HasForeignKey(ps => ps.MenuItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PendingStockClearance>()
+            .HasOne(c => c.PendingStock)
+            .WithMany(ps => ps.Clearances)
+            .HasForeignKey(c => c.PendingStockId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PendingStockClearance>()
+            .HasOne(c => c.GRN)
+            .WithMany()
+            .HasForeignKey(c => c.GRNId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PendingStockClearance>()
+            .HasOne(c => c.GRNItem)
+            .WithMany()
+            .HasForeignKey(c => c.GRNItemId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Bakery sale relationships
         modelBuilder.Entity<SaleItem>()

@@ -60,37 +60,47 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.27.4.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.27.4.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.27.4.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.27.4.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.27.4.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.28.0.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.28.0.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.28.0.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.28.0.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.28.0.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.27.4
-          name: v1.27.4 - PickMe + Uber Eats Bug Fixes
+          tag_name: v1.28.0
+          name: v1.28.0 - Pending Stock System for Online Orders
           body: |
-            ## Changes in v1.27.4
+            ## Changes in v1.28.0
 
-            ### Bug Fixes
-            - **PICKME JSON FIX**: Fixed PickMe API deserialization — item.total sent as string, qty/id may also be strings. Added FlexibleDecimalConverter and FlexibleIntConverter to handle all PickMe field type mismatches
-            - **UBER EATS TOKEN FIX**: Fixed production OAuth token URL (login.uber.com instead of auth.uber.com). Tries multiple URLs and scope combinations including scopeless request
-            - **UBER OAUTH SCOPE FIX**: Production authorize flow now uses correct scopes (eats.store+eats.order+eats.store.orders.read) instead of sandbox-only eats.pos_provisioning
+            ### New Feature: Pending Stock System
+            - **ONLINE ORDERS CAN GO NEGATIVE**: PickMe and Uber Eats orders are now accepted even when stock is insufficient
+            - **AUTOMATIC SHORTAGE TRACKING**: When stock < order quantity, a PendingStock record is created with the shortage amount
+            - **GRN AUTO-SETTLEMENT**: When GRNs arrive, pending stocks are automatically settled in FIFO order
+            - **MANY-TO-MANY CLEARANCE**: One GRN can settle multiple pending stocks, and one pending stock can be settled by multiple GRNs
+            - **POS RESTRICTION UNCHANGED**: Cashiers/salesmen still cannot sell beyond available stock
+            - **NEW API ENDPOINTS**:
+              - GET /api/PendingStock — List pending stocks (filter by status: ACTIVE, SETTLED, ALL)
+              - GET /api/PendingStock/summary — Summary grouped by item (total shortage per item)
+              - GET /api/PendingStock/{id} — Pending stock detail with clearance history
+
+            ### New Database Tables
+            - **PendingStocks** — Tracks shortages from online platform orders
+            - **PendingStockClearances** — Records GRN-to-pending-stock settlement history
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.27.4.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.27.4.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.27.4.zip** — API server
-            - **RoyalBakeryAdmin-v1.27.4.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.27.4.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.28.0.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.28.0.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.28.0.zip** — API server
+            - **RoyalBakeryAdmin-v1.28.0.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.28.0.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.27.4.zip
-            RoyalBakerySalesman-v1.27.4.zip
-            RoyalBakeryAPI-v1.27.4.zip
-            RoyalBakeryAdmin-v1.27.4.zip
-            RoyalBakeryRestaurant-v1.27.4.zip
+            RoyalBakeryCashier-v1.28.0.zip
+            RoyalBakerySalesman-v1.28.0.zip
+            RoyalBakeryAPI-v1.28.0.zip
+            RoyalBakeryAdmin-v1.28.0.zip
+            RoyalBakeryRestaurant-v1.28.0.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

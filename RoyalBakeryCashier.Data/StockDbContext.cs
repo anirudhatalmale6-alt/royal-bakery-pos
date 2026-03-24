@@ -37,6 +37,10 @@ namespace RoyalBakeryCashier.Data
         public DbSet<DeliveryOrder> DeliveryOrders { get; set; }
         public DbSet<DeliveryOrderItem> DeliveryOrderItems { get; set; }
 
+        // Pending stock (online order shortages settled by GRNs)
+        public DbSet<PendingStock> PendingStocks { get; set; }
+        public DbSet<PendingStockClearance> PendingStockClearances { get; set; }
+
         /// <summary>
         /// Static connection string override. Set from App.xaml.cs based on terminal.config.
         /// If null/empty, falls back to localhost with Windows Authentication.
@@ -152,6 +156,43 @@ namespace RoyalBakeryCashier.Data
                 .WithMany(d => d.Items)
                 .HasForeignKey(doi => doi.DeliveryOrderId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // ===== Pending Stock Entities =====
+            modelBuilder.Entity<PendingStock>()
+                .HasOne(ps => ps.DeliveryOrder)
+                .WithMany()
+                .HasForeignKey(ps => ps.DeliveryOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PendingStock>()
+                .HasOne(ps => ps.MenuItem)
+                .WithMany()
+                .HasForeignKey(ps => ps.MenuItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PendingStockClearance>()
+                .HasOne(c => c.PendingStock)
+                .WithMany(ps => ps.Clearances)
+                .HasForeignKey(c => c.PendingStockId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PendingStockClearance>()
+                .HasOne(c => c.GRN)
+                .WithMany()
+                .HasForeignKey(c => c.GRNId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PendingStockClearance>()
+                .HasOne(c => c.GRNItem)
+                .WithMany()
+                .HasForeignKey(c => c.GRNItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PendingStockClearance>()
+                .HasOne(c => c.MenuItem)
+                .WithMany()
+                .HasForeignKey(c => c.MenuItemId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<DeliveryOrder>()
                 .Property(d => d.OrderTotal).HasColumnType("decimal(18,2)");
@@ -426,6 +467,35 @@ namespace RoyalBakeryCashier.Data
                       ItemType NVARCHAR(5) NOT NULL DEFAULT 'U',
                       LocalItemId INT NULL,
                       CONSTRAINT FK_DeliveryOrderItems_DeliveryOrders FOREIGN KEY (DeliveryOrderId) REFERENCES DeliveryOrders(Id) ON DELETE CASCADE
+                  );",
+
+                // ===== Pending Stock Tables (online order shortages) =====
+                @"IF OBJECT_ID('PendingStocks', 'U') IS NULL
+                  CREATE TABLE PendingStocks (
+                      Id INT IDENTITY(1,1) PRIMARY KEY,
+                      DeliveryOrderId INT NOT NULL,
+                      MenuItemId INT NOT NULL,
+                      PendingQuantity INT NOT NULL,
+                      CurrentPendingQuantity INT NOT NULL,
+                      Status NVARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+                      CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+                      CONSTRAINT FK_PendingStocks_DeliveryOrders FOREIGN KEY (DeliveryOrderId) REFERENCES DeliveryOrders(Id) ON DELETE NO ACTION,
+                      CONSTRAINT FK_PendingStocks_MenuItems FOREIGN KEY (MenuItemId) REFERENCES MenuItems(Id) ON DELETE NO ACTION
+                  );",
+
+                @"IF OBJECT_ID('PendingStockClearances', 'U') IS NULL
+                  CREATE TABLE PendingStockClearances (
+                      Id INT IDENTITY(1,1) PRIMARY KEY,
+                      PendingStockId INT NOT NULL,
+                      GRNId INT NOT NULL,
+                      GRNItemId INT NOT NULL,
+                      MenuItemId INT NOT NULL,
+                      QuantityUsed INT NOT NULL,
+                      CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+                      CONSTRAINT FK_PendingStockClearances_PendingStocks FOREIGN KEY (PendingStockId) REFERENCES PendingStocks(Id) ON DELETE NO ACTION,
+                      CONSTRAINT FK_PendingStockClearances_GRNs FOREIGN KEY (GRNId) REFERENCES GRNs(Id) ON DELETE NO ACTION,
+                      CONSTRAINT FK_PendingStockClearances_GRNItems FOREIGN KEY (GRNItemId) REFERENCES GRNItems(Id) ON DELETE NO ACTION,
+                      CONSTRAINT FK_PendingStockClearances_MenuItems FOREIGN KEY (MenuItemId) REFERENCES MenuItems(Id) ON DELETE NO ACTION
                   );",
             };
 

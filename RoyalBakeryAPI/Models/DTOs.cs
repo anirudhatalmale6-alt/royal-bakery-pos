@@ -135,6 +135,40 @@ public class CategoryResponse
     public string Name { get; set; } = string.Empty;
 }
 
+// ===== Pending Stock DTOs =====
+public class PendingStockResponse
+{
+    public int Id { get; set; }
+    public int DeliveryOrderId { get; set; }
+    public string PlatformName { get; set; } = string.Empty;
+    public string PlatformOrderId { get; set; } = string.Empty;
+    public int MenuItemId { get; set; }
+    public string ItemName { get; set; } = string.Empty;
+    public int PendingQuantity { get; set; }
+    public int CurrentPendingQuantity { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public List<PendingStockClearanceResponse> Clearances { get; set; } = new();
+}
+
+public class PendingStockClearanceResponse
+{
+    public int Id { get; set; }
+    public int GRNId { get; set; }
+    public string GRNNumber { get; set; } = string.Empty;
+    public int GRNItemId { get; set; }
+    public int QuantityUsed { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class PendingStockSummaryResponse
+{
+    public int MenuItemId { get; set; }
+    public string ItemName { get; set; } = string.Empty;
+    public int TotalPending { get; set; }
+    public int ActiveRecords { get; set; }
+}
+
 // ===== Auth DTOs =====
 public class LoginRequest
 {
