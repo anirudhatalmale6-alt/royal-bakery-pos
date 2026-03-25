@@ -278,6 +278,28 @@ public class PendingStockClearance
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 }
 
+// ===== Online Order to Sales Mapping =====
+
+[Table("OnlineOrderSalesMap")]
+public class OnlineOrderSalesMap
+{
+    [Key]
+    public int Id { get; set; }
+    public int OnlineOrderId { get; set; }
+    [ForeignKey("OnlineOrderId")]
+    public DeliveryOrder? OnlineOrder { get; set; }
+    public int? SaleId { get; set; }
+    [ForeignKey("SaleId")]
+    public Sale? Sale { get; set; }
+    public int? RestaurantSaleId { get; set; }
+    [ForeignKey("RestaurantSaleId")]
+    public RestaurantSale? RestaurantSale { get; set; }
+    /// <summary>BAKERY or RESTAURANT</summary>
+    [MaxLength(20)]
+    public string Type { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+}
+
 // Bakery Sales entity for delivery stock deduction
 [Table("Sales")]
 public class Sale

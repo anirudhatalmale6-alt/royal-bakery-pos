@@ -41,6 +41,9 @@ namespace RoyalBakeryCashier.Data
         public DbSet<PendingStock> PendingStocks { get; set; }
         public DbSet<PendingStockClearance> PendingStockClearances { get; set; }
 
+        // Online order to sales mapping
+        public DbSet<OnlineOrderSalesMap> OnlineOrderSalesMaps { get; set; }
+
         /// <summary>
         /// Static connection string override. Set from App.xaml.cs based on terminal.config.
         /// If null/empty, falls back to localhost with Windows Authentication.
@@ -192,6 +195,25 @@ namespace RoyalBakeryCashier.Data
                 .HasOne(c => c.MenuItem)
                 .WithMany()
                 .HasForeignKey(c => c.MenuItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ===== Online Order Sales Map =====
+            modelBuilder.Entity<OnlineOrderSalesMap>()
+                .HasOne(m => m.OnlineOrder)
+                .WithMany()
+                .HasForeignKey(m => m.OnlineOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OnlineOrderSalesMap>()
+                .HasOne(m => m.Sale)
+                .WithMany()
+                .HasForeignKey(m => m.SaleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OnlineOrderSalesMap>()
+                .HasOne(m => m.RestaurantSale)
+                .WithMany()
+                .HasForeignKey(m => m.RestaurantSaleId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<DeliveryOrder>()
@@ -496,6 +518,20 @@ namespace RoyalBakeryCashier.Data
                       CONSTRAINT FK_PendingStockClearances_GRNs FOREIGN KEY (GRNId) REFERENCES GRNs(Id) ON DELETE NO ACTION,
                       CONSTRAINT FK_PendingStockClearances_GRNItems FOREIGN KEY (GRNItemId) REFERENCES GRNItems(Id) ON DELETE NO ACTION,
                       CONSTRAINT FK_PendingStockClearances_MenuItems FOREIGN KEY (MenuItemId) REFERENCES MenuItems(Id) ON DELETE NO ACTION
+                  );",
+
+                // ===== Online Order Sales Mapping Table =====
+                @"IF OBJECT_ID('OnlineOrderSalesMap', 'U') IS NULL
+                  CREATE TABLE OnlineOrderSalesMap (
+                      Id INT IDENTITY(1,1) PRIMARY KEY,
+                      OnlineOrderId INT NOT NULL,
+                      SaleId INT NULL,
+                      RestaurantSaleId INT NULL,
+                      Type NVARCHAR(20) NOT NULL,
+                      CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+                      CONSTRAINT FK_OnlineOrderSalesMap_DeliveryOrders FOREIGN KEY (OnlineOrderId) REFERENCES DeliveryOrders(Id) ON DELETE NO ACTION,
+                      CONSTRAINT FK_OnlineOrderSalesMap_Sales FOREIGN KEY (SaleId) REFERENCES Sales(Id) ON DELETE NO ACTION,
+                      CONSTRAINT FK_OnlineOrderSalesMap_RestaurantSales FOREIGN KEY (RestaurantSaleId) REFERENCES RestaurantSales(Id) ON DELETE NO ACTION
                   );",
             };
 

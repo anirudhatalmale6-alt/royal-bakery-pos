@@ -267,8 +267,9 @@ public class PickMePollingService : BackgroundService
         }
 
         // Create RestaurantSale if there are restaurant items
+        // Always create regardless of account config — restaurant items must always be recorded
         int? restaurantSaleId = null;
-        if (restaurantItems.Count > 0 && hasRestaurant)
+        if (restaurantItems.Count > 0)
         {
             var nextNum = db.RestaurantSales.Any()
                 ? db.RestaurantSales.Max(s => s.Id) + 1 : 1;
@@ -302,7 +303,8 @@ public class PickMePollingService : BackgroundService
         int? bakerySaleId = null;
         var pendingStockItems = new List<(int menuItemId, int shortage)>();
 
-        if (bakeryItems.Count > 0 && hasBakery)
+        // Always create regardless of account config — bakery items must always be recorded
+        if (bakeryItems.Count > 0)
         {
             var nextNum = db.Sales.Any() ? db.Sales.Max(s => s.Id) + 1 : 1;
 
@@ -408,6 +410,32 @@ public class PickMePollingService : BackgroundService
             _logger.LogInformation("PickMe order {JobId}: Created {Count} pending stock records",
                 job.PickmeJobId, pendingStockItems.Count);
         }
+
+        // Create OnlineOrderSalesMap records
+        if (bakerySaleId.HasValue)
+        {
+            db.OnlineOrderSalesMaps.Add(new OnlineOrderSalesMap
+            {
+                OnlineOrderId = deliveryOrder.Id,
+                SaleId = bakerySaleId.Value,
+                RestaurantSaleId = null,
+                Type = "BAKERY",
+                CreatedAt = DateTime.Now
+            });
+        }
+        if (restaurantSaleId.HasValue)
+        {
+            db.OnlineOrderSalesMaps.Add(new OnlineOrderSalesMap
+            {
+                OnlineOrderId = deliveryOrder.Id,
+                SaleId = null,
+                RestaurantSaleId = restaurantSaleId.Value,
+                Type = "RESTAURANT",
+                CreatedAt = DateTime.Now
+            });
+        }
+        if (bakerySaleId.HasValue || restaurantSaleId.HasValue)
+            await db.SaveChangesAsync(ct);
 
         _logger.LogInformation("PickMe order {JobId} saved. Restaurant items: {RCount}, Bakery items: {BCount}",
             job.PickmeJobId, restaurantItems.Count, bakeryItems.Count);

@@ -34,6 +34,9 @@ public class BakeryDbContext : DbContext
     public DbSet<PendingStock> PendingStocks { get; set; }
     public DbSet<PendingStockClearance> PendingStockClearances { get; set; }
 
+    // Online order to sales mapping
+    public DbSet<OnlineOrderSalesMap> OnlineOrderSalesMaps { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -126,6 +129,25 @@ public class BakeryDbContext : DbContext
             .HasOne(c => c.GRNItem)
             .WithMany()
             .HasForeignKey(c => c.GRNItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Online order sales mapping relationships
+        modelBuilder.Entity<OnlineOrderSalesMap>()
+            .HasOne(m => m.OnlineOrder)
+            .WithMany()
+            .HasForeignKey(m => m.OnlineOrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OnlineOrderSalesMap>()
+            .HasOne(m => m.Sale)
+            .WithMany()
+            .HasForeignKey(m => m.SaleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OnlineOrderSalesMap>()
+            .HasOne(m => m.RestaurantSale)
+            .WithMany()
+            .HasForeignKey(m => m.RestaurantSaleId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Bakery sale relationships

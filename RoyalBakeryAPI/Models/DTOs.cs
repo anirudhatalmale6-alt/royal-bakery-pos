@@ -169,6 +169,21 @@ public class PendingStockSummaryResponse
     public int ActiveRecords { get; set; }
 }
 
+// ===== Online Order Sales Map DTOs =====
+public class OnlineOrderSalesMapResponse
+{
+    public int Id { get; set; }
+    public int OnlineOrderId { get; set; }
+    public string PlatformName { get; set; } = string.Empty;
+    public string PlatformOrderId { get; set; } = string.Empty;
+    public int? SaleId { get; set; }
+    public string? SaleInvoice { get; set; }
+    public int? RestaurantSaleId { get; set; }
+    public string? RestaurantSaleInvoice { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
 // ===== Auth DTOs =====
 public class LoginRequest
 {
