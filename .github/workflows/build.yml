@@ -60,43 +60,39 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.29.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.29.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.29.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.29.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.29.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.30.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.30.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.30.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.30.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.30.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.29
-          name: v1.29 - Edit Orders + Full Item Names
+          tag_name: v1.30
+          name: v1.30 - Admin Excel Export
           body: |
-            ## Changes in v1.29
+            ## Changes in v1.30
 
-            ### Salesman: Edit Order from History
-            - **EDIT BUTTON** in Order History for pending orders
-            - Opens POS with previous order items loaded for modification
-            - Add or remove items, then create updated order
-            - Old order automatically cancelled when new one is created
-
-            ### Both Cashier + Salesman: Full Item Names Visible
-            - **ALL ITEM CARDS SAME SIZE** (fixed height 80px)
-            - **FULL NAMES DISPLAYED** with word wrap (up to 3 lines)
-            - No more truncated item names
+            ### Admin Panel: Export Items to Excel
+            - **EXPORT TO EXCEL** button on Bakery Products page
+            - **EXPORT TO EXCEL** button on Restaurant Products page
+            - Exports Item ID, Item Name, and Price to .xlsx file
+            - Files saved to Desktop with timestamp
+            - Styled headers with auto-fit columns
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.29.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.29.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.29.zip** — API server
-            - **RoyalBakeryAdmin-v1.29.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.29.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.30.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.30.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.30.zip** — API server
+            - **RoyalBakeryAdmin-v1.30.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.30.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.29.zip
-            RoyalBakerySalesman-v1.29.zip
-            RoyalBakeryAPI-v1.29.zip
-            RoyalBakeryAdmin-v1.29.zip
-            RoyalBakeryRestaurant-v1.29.zip
+            RoyalBakeryCashier-v1.30.zip
+            RoyalBakerySalesman-v1.30.zip
+            RoyalBakeryAPI-v1.30.zip
+            RoyalBakeryAdmin-v1.30.zip
+            RoyalBakeryRestaurant-v1.30.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

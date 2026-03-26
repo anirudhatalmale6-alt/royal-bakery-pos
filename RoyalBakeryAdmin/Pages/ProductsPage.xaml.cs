@@ -1,3 +1,4 @@
+using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using RoyalBakeryCashier.Data;
 using RoyalBakeryCashier.Data.Entities;
@@ -200,6 +201,61 @@ public partial class ProductsPage : ContentPage
             {
                 await DisplayAlert("Error", $"Cannot delete: {ex.InnerException?.Message ?? ex.Message}\n\nItem may be referenced by orders or GRNs.", "OK");
             }
+        }
+    }
+
+    private async void ExportToExcel_Clicked(object sender, EventArgs e)
+    {
+        try
+        {
+            if (_allProducts == null || _allProducts.Count == 0)
+            {
+                await DisplayAlert("No Data", "No products to export.", "OK");
+                return;
+            }
+
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string fileName = $"BakeryItems_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            string filePath = Path.Combine(desktopPath, fileName);
+
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("Bakery Items");
+
+            // Headers
+            ws.Cell(1, 1).Value = "Item ID";
+            ws.Cell(1, 2).Value = "Item Name";
+            ws.Cell(1, 3).Value = "Price";
+
+            // Style headers
+            var headerRange = ws.Range(1, 1, 1, 3);
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Fill.BackgroundColor = XLColor.FromArgb(0x1A237E);
+            headerRange.Style.Font.FontColor = XLColor.White;
+            headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            // Data rows
+            for (int i = 0; i < _allProducts.Count; i++)
+            {
+                var p = _allProducts[i];
+                ws.Cell(i + 2, 1).Value = p.Id;
+                ws.Cell(i + 2, 2).Value = p.Name;
+                ws.Cell(i + 2, 3).Value = p.Price;
+            }
+
+            // Format price column
+            ws.Column(3).Style.NumberFormat.Format = "#,##0.00";
+
+            // Auto-fit columns
+            ws.Columns().AdjustToContents();
+
+            workbook.SaveAs(filePath);
+
+            await DisplayAlert("Export Complete",
+                $"Bakery items exported to Desktop:\n\n{fileName}\n\n{_allProducts.Count} items exported.", "OK");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Export Error", ex.Message, "OK");
         }
     }
 

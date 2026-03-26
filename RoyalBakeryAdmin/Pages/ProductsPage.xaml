@@ -7,7 +7,7 @@
     <Grid RowDefinitions="Auto,*" Padding="30" RowSpacing="15">
 
         <!-- Header -->
-        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
             <Label Text="Product Management"
                    FontSize="28" FontAttributes="Bold" TextColor="#1A237E"
                    VerticalOptions="Center"/>
@@ -17,7 +17,14 @@
                    WidthRequest="250"
                    TextChanged="SearchEntry_TextChanged"/>
 
-            <Button x:Name="AddProductBtn" Grid.Column="2"
+            <Button Grid.Column="2"
+                    Text="Export to Excel"
+                    BackgroundColor="#FF9800"
+                    TextColor="White"
+                    CornerRadius="8"
+                    Clicked="ExportToExcel_Clicked"/>
+
+            <Button x:Name="AddProductBtn" Grid.Column="3"
                     Text="+ Add Product"
                     BackgroundColor="#4CAF50"
                     TextColor="White"
