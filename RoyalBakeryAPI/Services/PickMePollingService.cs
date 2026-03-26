@@ -190,6 +190,10 @@ public class PickMePollingService : BackgroundService
         var restaurantItems = new List<(int localId, string name, int qty, decimal price)>();
         var bakeryItems = new List<(int localId, string name, int qty, decimal price)>();
 
+        // Pre-load menu items and restaurant items for name-based matching fallback
+        var allMenuItems = await db.MenuItems.ToListAsync(ct);
+        var allRestaurantItems = await db.RestaurantItems.ToListAsync(ct);
+
         if (job.Order?.Items != null)
         {
             foreach (var item in job.Order.Items)
@@ -231,6 +235,42 @@ public class PickMePollingService : BackgroundService
                         itemType = "R";
                         localItemId = legacyRestId;
                         restaurantItems.Add((legacyRestId, item.Name ?? "", item.Qty, item.Total / Math.Max(item.Qty, 1)));
+                    }
+                }
+
+                // FALLBACK: If ref_id didn't match, try matching by item name
+                if (itemType == "U" && !string.IsNullOrEmpty(item.Name))
+                {
+                    var itemName = item.Name.Trim();
+
+                    // Try restaurant items first (case-insensitive)
+                    var matchedRestItem = allRestaurantItems
+                        .FirstOrDefault(ri => string.Equals(ri.Name, itemName, StringComparison.OrdinalIgnoreCase));
+
+                    if (matchedRestItem != null)
+                    {
+                        itemType = "R";
+                        localItemId = matchedRestItem.Id;
+                        restaurantItems.Add((matchedRestItem.Id, item.Name, item.Qty, item.Total / Math.Max(item.Qty, 1)));
+                        _logger.LogInformation("PickMe item '{Name}' matched to restaurant item {Id} by name", item.Name, matchedRestItem.Id);
+                    }
+                    else
+                    {
+                        // Try bakery menu items
+                        var matchedMenuItem = allMenuItems
+                            .FirstOrDefault(mi => string.Equals(mi.Name, itemName, StringComparison.OrdinalIgnoreCase));
+
+                        if (matchedMenuItem != null)
+                        {
+                            itemType = "B";
+                            localItemId = matchedMenuItem.Id;
+                            bakeryItems.Add((matchedMenuItem.Id, item.Name, item.Qty, item.Total / Math.Max(item.Qty, 1)));
+                            _logger.LogInformation("PickMe item '{Name}' matched to bakery item {Id} by name", item.Name, matchedMenuItem.Id);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("PickMe item '{Name}' (ref_id: '{RefId}') could not be matched to any local item", item.Name, refId);
+                        }
                     }
                 }
 

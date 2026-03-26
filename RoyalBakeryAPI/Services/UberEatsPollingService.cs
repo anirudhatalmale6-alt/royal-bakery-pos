@@ -273,6 +273,10 @@ public class UberEatsPollingService : BackgroundService
         var restaurantItems = new List<(int localId, string name, int qty, decimal price)>();
         var bakeryItems = new List<(int localId, string name, int qty, decimal price)>();
 
+        // Pre-load menu items and restaurant items for name-based matching fallback
+        var allMenuItems = await db.MenuItems.ToListAsync(ct);
+        var allRestaurantItems = await db.RestaurantItems.ToListAsync(ct);
+
         var allCartItems = order.Cart?.Items ?? new List<UberCartItem>();
         foreach (var item in allCartItems)
         {
@@ -316,6 +320,42 @@ public class UberEatsPollingService : BackgroundService
                     itemType = "R";
                     localItemId = legacyRestId;
                     restaurantItems.Add((legacyRestId, item.Title ?? "", qty, price));
+                }
+            }
+
+            // FALLBACK: If ref_id didn't match, try matching by item name
+            if (itemType == "U" && !string.IsNullOrEmpty(item.Title))
+            {
+                var itemName = item.Title.Trim();
+
+                // Try restaurant items first (case-insensitive)
+                var matchedRestItem = allRestaurantItems
+                    .FirstOrDefault(ri => string.Equals(ri.Name, itemName, StringComparison.OrdinalIgnoreCase));
+
+                if (matchedRestItem != null)
+                {
+                    itemType = "R";
+                    localItemId = matchedRestItem.Id;
+                    restaurantItems.Add((matchedRestItem.Id, item.Title, qty, price));
+                    _logger.LogInformation("Uber item '{Name}' matched to restaurant item {Id} by name", item.Title, matchedRestItem.Id);
+                }
+                else
+                {
+                    // Try bakery menu items
+                    var matchedMenuItem = allMenuItems
+                        .FirstOrDefault(mi => string.Equals(mi.Name, itemName, StringComparison.OrdinalIgnoreCase));
+
+                    if (matchedMenuItem != null)
+                    {
+                        itemType = "B";
+                        localItemId = matchedMenuItem.Id;
+                        bakeryItems.Add((matchedMenuItem.Id, item.Title, qty, price));
+                        _logger.LogInformation("Uber item '{Name}' matched to bakery item {Id} by name", item.Title, matchedMenuItem.Id);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Uber item '{Name}' (external_data: '{RefId}') could not be matched to any local item", item.Title, refId);
+                    }
                 }
             }
 

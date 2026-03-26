@@ -60,48 +60,39 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.28.1.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.28.1.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.28.1.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.28.1.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.28.1.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.28.2.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.28.2.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.28.2.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.28.2.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.28.2.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.28.1
-          name: v1.28.1 - Online Order Sales Mapping + KOT Fix
+          tag_name: v1.28.2
+          name: v1.28.2 - Name-Based Item Matching for Online Orders
           body: |
-            ## Changes in v1.28.1
+            ## Changes in v1.28.2
 
-            ### New Feature: Online Order Sales Mapping Table
-            - **OnlineOrderSalesMap**: New relational table linking online orders to sales/restaurant_sales
-            - **MIXED ORDER SUPPORT**: One online order can map to both a bakery sale AND a restaurant sale
-            - **BAKERY + RESTAURANT SPLIT**: Items are automatically split by type and recorded in separate sales tables
-            - **MAPPING RECORDS**: Each sale type gets its own mapping entry (type = BAKERY or RESTAURANT)
-            - **NEW API ENDPOINTS**:
-              - GET /api/OnlineOrderSalesMap — List all mappings (filter: ?type=BAKERY/RESTAURANT/ALL)
-              - GET /api/OnlineOrderSalesMap/by-order/{id} — Get mappings for a specific online order
-
-            ### KOT Fix
-            - **KOT ALWAYS PRINTS FOR RESTAURANT ITEMS**: Removed account config restriction — restaurant items now always create RestaurantSale and trigger KOT regardless of account type (restaurant-only OR bakery+restaurant)
-            - **BAKERY ITEMS ALWAYS RECORDED**: Same fix applied — bakery items always create Sale record
-
-            ### New Database Table
-            - **OnlineOrderSalesMap** (id, online_order_id, sale_id, restaurant_sale_id, type, created_at)
+            ### Fix: Name-Based Item Matching Fallback
+            - **ITEMS NOW MATCH BY NAME**: When PickMe/Uber items don't have ref_id in B-/R- format, the system now falls back to matching by item name against RestaurantItems and MenuItems tables
+            - **RESTAURANT ITEMS MATCHED FIRST**: Name matching tries restaurant items first, then bakery items
+            - **CASE-INSENSITIVE**: Matching is case-insensitive for reliability
+            - **LOGGING**: Each match/miss is logged so you can see which items were matched and which weren't
+            - **SALES + MAPPING NOW WORKS**: This fixes the issue where only DeliveryOrders was being updated but Sales, RestaurantSales, and OnlineOrderSalesMap were empty
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.28.1.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.28.1.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.28.1.zip** — API server
-            - **RoyalBakeryAdmin-v1.28.1.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.28.1.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.28.2.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.28.2.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.28.2.zip** — API server
+            - **RoyalBakeryAdmin-v1.28.2.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.28.2.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.28.1.zip
-            RoyalBakerySalesman-v1.28.1.zip
-            RoyalBakeryAPI-v1.28.1.zip
-            RoyalBakeryAdmin-v1.28.1.zip
-            RoyalBakeryRestaurant-v1.28.1.zip
+            RoyalBakeryCashier-v1.28.2.zip
+            RoyalBakerySalesman-v1.28.2.zip
+            RoyalBakeryAPI-v1.28.2.zip
+            RoyalBakeryAdmin-v1.28.2.zip
+            RoyalBakeryRestaurant-v1.28.2.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
