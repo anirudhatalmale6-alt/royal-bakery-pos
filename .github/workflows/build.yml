@@ -60,39 +60,43 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.28.2.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.28.2.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.28.2.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.28.2.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.28.2.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.29.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.29.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.29.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.29.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.29.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.28.2
-          name: v1.28.2 - Name-Based Item Matching for Online Orders
+          tag_name: v1.29
+          name: v1.29 - Edit Orders + Full Item Names
           body: |
-            ## Changes in v1.28.2
+            ## Changes in v1.29
 
-            ### Fix: Name-Based Item Matching Fallback
-            - **ITEMS NOW MATCH BY NAME**: When PickMe/Uber items don't have ref_id in B-/R- format, the system now falls back to matching by item name against RestaurantItems and MenuItems tables
-            - **RESTAURANT ITEMS MATCHED FIRST**: Name matching tries restaurant items first, then bakery items
-            - **CASE-INSENSITIVE**: Matching is case-insensitive for reliability
-            - **LOGGING**: Each match/miss is logged so you can see which items were matched and which weren't
-            - **SALES + MAPPING NOW WORKS**: This fixes the issue where only DeliveryOrders was being updated but Sales, RestaurantSales, and OnlineOrderSalesMap were empty
+            ### Salesman: Edit Order from History
+            - **EDIT BUTTON** in Order History for pending orders
+            - Opens POS with previous order items loaded for modification
+            - Add or remove items, then create updated order
+            - Old order automatically cancelled when new one is created
+
+            ### Both Cashier + Salesman: Full Item Names Visible
+            - **ALL ITEM CARDS SAME SIZE** (fixed height 80px)
+            - **FULL NAMES DISPLAYED** with word wrap (up to 3 lines)
+            - No more truncated item names
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.28.2.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.28.2.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.28.2.zip** — API server
-            - **RoyalBakeryAdmin-v1.28.2.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.28.2.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.29.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.29.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.29.zip** — API server
+            - **RoyalBakeryAdmin-v1.29.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.29.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.28.2.zip
-            RoyalBakerySalesman-v1.28.2.zip
-            RoyalBakeryAPI-v1.28.2.zip
-            RoyalBakeryAdmin-v1.28.2.zip
-            RoyalBakeryRestaurant-v1.28.2.zip
+            RoyalBakeryCashier-v1.29.zip
+            RoyalBakerySalesman-v1.29.zip
+            RoyalBakeryAPI-v1.29.zip
+            RoyalBakeryAdmin-v1.29.zip
+            RoyalBakeryRestaurant-v1.29.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

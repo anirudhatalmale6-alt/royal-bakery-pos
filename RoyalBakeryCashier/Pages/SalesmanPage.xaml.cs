@@ -347,6 +347,21 @@ public partial class SalesmanPage : ContentPage
     {
         if (!_cartItems.Any()) return; // silent — no popup for empty cart
 
+        // If editing an existing order, cancel the old one first
+        if (_editingSalesOrderId.HasValue)
+        {
+            await Task.Run(() =>
+            {
+                var oldOrder = _dbContext.SalesOrders.FirstOrDefault(so => so.Id == _editingSalesOrderId.Value);
+                if (oldOrder != null && oldOrder.Status == 0) // Only cancel if still Pending
+                {
+                    oldOrder.Status = 2; // Cancelled
+                    _dbContext.SaveChanges();
+                }
+            });
+            _editingSalesOrderId = null;
+        }
+
         // Generate sales order number (async to avoid UI freeze on Celeron)
         var lastOrder = await Task.Run(() =>
             _dbContext.SalesOrders.OrderByDescending(so => so.Id).FirstOrDefault());
@@ -523,11 +538,45 @@ public partial class SalesmanPage : ContentPage
 
     private async void OrderHistory_Clicked(object sender, EventArgs e)
     {
-        await Navigation.PushModalAsync(new NavigationPage(new OrderHistoryPage())
+        await Navigation.PushModalAsync(new NavigationPage(new OrderHistoryPage(LoadOrderForEdit))
         {
             BarBackgroundColor = Color.FromArgb("#1A1A1A"),
             BarTextColor = Colors.White
         }, false);
+    }
+
+    private int? _editingSalesOrderId = null;
+
+    private void LoadOrderForEdit(SalesOrder order)
+    {
+        // Clear current cart (restore stock)
+        foreach (var ci in _cartItems)
+        {
+            var mi = _allItems.FirstOrDefault(x => x.MenuItemId == ci.MenuItemId);
+            if (mi != null) mi.AvailableStock += ci.Quantity;
+        }
+        _cartItems.Clear();
+
+        // Load order items into cart
+        foreach (var item in order.Items)
+        {
+            var menuItem = _allItems.FirstOrDefault(x => x.MenuItemId == item.MenuItemId);
+            if (menuItem == null) continue;
+
+            _cartItems.Add(new CartItem
+            {
+                MenuItemId = item.MenuItemId,
+                Name = menuItem.Name,
+                Quantity = item.Quantity,
+                Price = item.PricePerItem,
+                Total = item.TotalPrice
+            });
+            menuItem.AvailableStock -= item.Quantity;
+        }
+
+        _editingSalesOrderId = order.Id;
+        CustomerNameEntry.Text = order.CustomerName ?? "";
+        UpdateTotal();
     }
 
     private async void RefreshItems_Clicked(object sender, EventArgs e)
@@ -562,8 +611,11 @@ public partial class SalesmanPage : ContentPage
     // ===== ORDER HISTORY PAGE =====
     public class OrderHistoryPage : ContentPage
     {
-        public OrderHistoryPage()
+        private readonly Action<SalesOrder>? _onEditOrder;
+
+        public OrderHistoryPage(Action<SalesOrder>? onEditOrder = null)
         {
+            _onEditOrder = onEditOrder;
             Title = "Order History";
             BackgroundColor = Color.FromArgb("#1A1A1A");
 
@@ -590,7 +642,7 @@ public partial class SalesmanPage : ContentPage
 
                     var grid = new Grid
                     {
-                        ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) },
+                        ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Auto) },
                         RowDefinitions = { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto) },
                         RowSpacing = 2
                     };
@@ -611,11 +663,30 @@ public partial class SalesmanPage : ContentPage
                     statusLabel.SetBinding(Label.TextProperty, new Binding("Status", converter: new StatusConverter()));
                     statusLabel.SetBinding(Label.TextColorProperty, new Binding("Status", converter: new StatusColorConverter()));
 
+                    // Edit button — only visible for Pending orders
+                    var editBtn = new Button
+                    {
+                        Text = "Edit",
+                        FontSize = 12,
+                        HeightRequest = 32,
+                        WidthRequest = 60,
+                        Padding = 0,
+                        CornerRadius = 6,
+                        BackgroundColor = Color.FromArgb("#2196F3"),
+                        TextColor = Colors.White,
+                        VerticalOptions = LayoutOptions.Center
+                    };
+                    editBtn.SetBinding(Button.CommandParameterProperty, ".");
+                    editBtn.SetBinding(Button.IsVisibleProperty, new Binding("Status", converter: new PendingVisibilityConverter()));
+                    editBtn.Clicked += EditOrder_Clicked;
+
                     grid.Add(orderNum, 0, 0);
                     grid.Add(date, 0, 1);
                     grid.Add(customer, 0, 2);
                     grid.Add(total, 1, 0);
                     grid.Add(statusLabel, 1, 1);
+                    grid.Add(editBtn, 2, 0);
+                    Grid.SetRowSpan(editBtn, 2);
 
                     frame.Content = grid;
                     return frame;
@@ -650,6 +721,28 @@ public partial class SalesmanPage : ContentPage
             Grid.SetRow(closeBtn, 2);
             mainGrid.Children.Add(listView);
             mainGrid.Children.Add(closeBtn);
+        }
+
+        private async void EditOrder_Clicked(object? sender, EventArgs e)
+        {
+            if (sender is Button btn && btn.CommandParameter is SalesOrder order)
+            {
+                if (order.Status != 0)
+                {
+                    await DisplayAlert("Cannot Edit", "Only pending orders can be edited.", "OK");
+                    return;
+                }
+
+                _onEditOrder?.Invoke(order);
+                await Navigation.PopModalAsync(false);
+            }
+        }
+
+        private class PendingVisibilityConverter : IValueConverter
+        {
+            public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+                => (int)value == 0; // Only visible for Pending (status 0)
+            public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => 0;
         }
 
         private class StatusConverter : IValueConverter

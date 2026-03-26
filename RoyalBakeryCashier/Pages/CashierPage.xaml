@@ -143,19 +143,20 @@
                                            BackgroundColor="{StaticResource ItemRowBg}"
                                            CornerRadius="6"
                                            BorderColor="{StaticResource Gray600}"
-                                           HorizontalOptions="FillAndExpand">
+                                           HorizontalOptions="FillAndExpand"
+                                           HeightRequest="80">
 
                                         <VerticalStackLayout Spacing="1"
                                                              HorizontalOptions="Center"
                                                              VerticalOptions="Center">
 
                                             <Label Text="{Binding Name}"
-                                                   FontSize="11"
+                                                   FontSize="10"
                                                    FontAttributes="Bold"
                                                    TextColor="White"
                                                    HorizontalTextAlignment="Center"
-                                                   LineBreakMode="TailTruncation"
-                                                   MaxLines="1"/>
+                                                   LineBreakMode="WordWrap"
+                                                   MaxLines="3"/>
 
                                             <Label Text="{Binding Price, StringFormat='{0:F2}'}"
                                                    FontSize="12"
