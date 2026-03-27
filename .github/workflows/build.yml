@@ -60,39 +60,42 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.30.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.30.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.30.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.30.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.30.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.30.1.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.30.1.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.30.1.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.30.1.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.30.1.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.30
-          name: v1.30 - Admin Excel Export
+          tag_name: v1.30.1
+          name: v1.30.1 - Fix DB permission error on remote connections
           body: |
-            ## Changes in v1.30
+            ## Changes in v1.30.1
 
-            ### Admin Panel: Export Items to Excel
-            - **EXPORT TO EXCEL** button on Bakery Products page
-            - **EXPORT TO EXCEL** button on Restaurant Products page
-            - Exports Item ID, Item Name, and Price to .xlsx file
-            - Files saved to Desktop with timestamp
-            - Styled headers with auto-fit columns
+            ### Bug Fix: "Create Database permission denied" error
+            - Admin and Restaurant panels no longer call EnsureCreated when using SQL authentication (remote DB connection)
+            - The database is already created by the API/Cashier on the server — remote terminals only need ApplyMigrations
+            - Fixes login failure on terminals connecting to a remote SQL Server with limited permissions
+
+            ### Previous (v1.30)
+            - Admin Excel export for Bakery + Restaurant items
+            - Salesman order edit from history
+            - Full item name visibility in Cashier + Salesman
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.30.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.30.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.30.zip** — API server
-            - **RoyalBakeryAdmin-v1.30.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.30.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.30.1.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.30.1.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.30.1.zip** — API server
+            - **RoyalBakeryAdmin-v1.30.1.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.30.1.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.30.zip
-            RoyalBakerySalesman-v1.30.zip
-            RoyalBakeryAPI-v1.30.zip
-            RoyalBakeryAdmin-v1.30.zip
-            RoyalBakeryRestaurant-v1.30.zip
+            RoyalBakeryCashier-v1.30.1.zip
+            RoyalBakerySalesman-v1.30.1.zip
+            RoyalBakeryAPI-v1.30.1.zip
+            RoyalBakeryAdmin-v1.30.1.zip
+            RoyalBakeryRestaurant-v1.30.1.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
