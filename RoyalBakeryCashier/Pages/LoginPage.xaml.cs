@@ -43,17 +43,10 @@ public partial class LoginPage : ContentPage
 
         try
         {
-            // Ensure DB schema is up to date
-            // Salesman terminals skip EnsureCreated — the database is already
-            // created by the API/Cashier on the server machine. The Salesman's
-            // Windows user typically lacks CREATE DATABASE permission on the remote server.
+            // Only the API creates the database — client apps just apply migrations.
             await Task.Run(() =>
             {
-                if (App.TerminalMode != "Salesman")
-                {
-                    _db.Database.EnsureCreated();
-                    _db.ApplyMigrations();
-                }
+                try { _db.ApplyMigrations(); } catch { }
             });
 
             var user = _db.Users.FirstOrDefault(u =>

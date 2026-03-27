@@ -31,12 +31,9 @@ public partial class LoginPage : ContentPage
 
         try
         {
-            // Skip EnsureCreated when using SQL auth (remote connection) —
-            // the database already exists, and the SQL user may lack CREATE DATABASE permission.
+            // Only the API creates the database — client apps just apply migrations.
             await Task.Run(() =>
             {
-                if (string.IsNullOrEmpty(RoyalBakeryRestaurant.App.DbUser))
-                    _db.Database.EnsureCreated();
                 try { _db.ApplyMigrations(); } catch { }
             });
 

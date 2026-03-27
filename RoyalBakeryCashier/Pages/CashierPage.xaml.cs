@@ -39,27 +39,10 @@ namespace RoyalBakeryCashier.Pages
                 _loaded = true;
                 try
                 {
+                    // Only the API creates the database — client apps just apply migrations.
                     await Task.Run(() =>
                     {
-                        _dbContext.Database.EnsureCreated();
-
-                        // Only run full migrations + seed on first-ever startup
-                        bool alreadySeeded = false;
-                        try { alreadySeeded = _dbContext.MenuCategories.Any(); } catch { }
-
-                        if (!alreadySeeded)
-                            _dbContext.ApplyMigrations(); // creates tables + seeds 195 items
-                        else
-                        {
-                            // Quick schema patch only (no seed)
-                            try
-                            {
-                                _dbContext.Database.ExecuteSqlRaw(
-                                    @"IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MenuItems') AND name = 'QuickCategory')
-                                      ALTER TABLE MenuItems ADD QuickCategory INT NOT NULL DEFAULT 0;");
-                            }
-                            catch { }
-                        }
+                        try { _dbContext.ApplyMigrations(); } catch { }
                     });
                     await LoadCategoriesAsync();
                 }
