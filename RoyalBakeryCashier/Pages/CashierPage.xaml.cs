@@ -85,7 +85,7 @@ namespace RoyalBakeryCashier.Pages
 
         private async Task LoadCategoriesAsync()
         {
-            var categories = await Task.Run(() => _dbContext.MenuCategories.ToList());
+            var categories = await Task.Run(() => _dbContext.MenuCategories.AsNoTracking().ToList());
             CategoryGrid.Children.Clear();
             CategoryGrid.RowDefinitions.Clear();
 
@@ -150,6 +150,7 @@ namespace RoyalBakeryCashier.Pages
                 var tomorrow = today.AddDays(1);
 
                 var todaySales = await Task.Run(() => _dbContext.Sales
+                    .AsNoTracking()
                     .Include(s => s.Items)
                     .Where(s => s.DateTime >= today && s.DateTime < tomorrow)
                     .ToList());
@@ -320,6 +321,7 @@ namespace RoyalBakeryCashier.Pages
         {
             var items = await Task.Run(() =>
                 _dbContext.Stocks
+                    .AsNoTracking()
                     .Include(s => s.MenuItem)
                     .Select(s => new ItemViewModel
                     {
@@ -334,7 +336,7 @@ namespace RoyalBakeryCashier.Pages
                     .ToList());
 
             _allItems = items;
-            ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(_allItems);
+            ItemsCollectionView.ItemsSource = _allItems;
         }
 
         private int? _currentCategoryId = null;
@@ -353,7 +355,7 @@ namespace RoyalBakeryCashier.Pages
             else if (categoryId != null)
                 filtered = _allItems.Where(i => i.MenuCategoryId == categoryId);
 
-            ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+            ItemsCollectionView.ItemsSource = filtered.ToList();
         }
 
         private void ItemSearchEntry_TextChanged(object sender, TextChangedEventArgs e)
@@ -387,7 +389,7 @@ namespace RoyalBakeryCashier.Pages
                         var filtered = _allItems
                             .Where(i => i.Name.Contains(text, StringComparison.OrdinalIgnoreCase))
                             .ToList();
-                        ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+                        ItemsCollectionView.ItemsSource = filtered.ToList();
                     });
             });
         }
@@ -419,7 +421,7 @@ namespace RoyalBakeryCashier.Pages
             else if (categoryId != null)
                 filtered = _allItems.Where(i => i.MenuCategoryId == categoryId);
 
-            ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+            ItemsCollectionView.ItemsSource = filtered.ToList();
         }
 
         private void ItemsCollectionView_SelectionChanged(object sender, SelectionChangedEventArgs e)

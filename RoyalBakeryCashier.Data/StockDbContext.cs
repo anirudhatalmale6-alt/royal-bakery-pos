@@ -56,9 +56,10 @@ namespace RoyalBakeryCashier.Data
             {
                 string connStr = ConnectionStringOverride;
                 if (string.IsNullOrEmpty(connStr))
-                    connStr = "Server=.\\SQLEXPRESS;Database=RoyalBakery;Trusted_Connection=True;TrustServerCertificate=True;Connect Timeout=120;";
+                    connStr = "Server=.\\SQLEXPRESS;Database=RoyalBakery;Trusted_Connection=True;TrustServerCertificate=True;Connect Timeout=30;Min Pool Size=2;Max Pool Size=50;";
                 optionsBuilder.UseSqlServer(connStr, opts =>
-                    opts.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorNumbersToAdd: null));
+                    opts.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorNumbersToAdd: null)
+                         .CommandTimeout(15)); // 15s query timeout — fast fail on slow queries
             }
         }
 

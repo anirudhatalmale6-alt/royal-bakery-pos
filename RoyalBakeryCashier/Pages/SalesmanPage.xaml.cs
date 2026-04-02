@@ -71,7 +71,7 @@ public partial class SalesmanPage : ContentPage
 
     private async Task LoadCategoriesAsync()
     {
-        var categories = await Task.Run(() => _dbContext.MenuCategories.ToList());
+        var categories = await Task.Run(() => _dbContext.MenuCategories.AsNoTracking().ToList());
         CategoryGrid.Children.Clear();
         CategoryGrid.RowDefinitions.Clear();
 
@@ -119,6 +119,7 @@ public partial class SalesmanPage : ContentPage
     {
         var items = await Task.Run(() =>
             _dbContext.Stocks
+                .AsNoTracking()
                 .Include(s => s.MenuItem)
                 .Select(s => new ItemViewModel
                 {
@@ -133,7 +134,7 @@ public partial class SalesmanPage : ContentPage
                 .ToList());
 
         _allItems = items;
-        ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(_allItems);
+        ItemsCollectionView.ItemsSource = _allItems;
     }
 
     private int? _currentCategoryId = null;
@@ -151,7 +152,7 @@ public partial class SalesmanPage : ContentPage
         else if (categoryId != null)
             filtered = _allItems.Where(i => i.MenuCategoryId == categoryId);
 
-        ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+        ItemsCollectionView.ItemsSource = filtered.ToList();
     }
 
     private void ItemSearchEntry_TextChanged(object sender, TextChangedEventArgs e)
@@ -174,7 +175,7 @@ public partial class SalesmanPage : ContentPage
                     var filtered = _allItems
                         .Where(i => i.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                         .ToList();
-                    ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+                    ItemsCollectionView.ItemsSource = filtered.ToList();
                 });
         });
     }
@@ -189,7 +190,7 @@ public partial class SalesmanPage : ContentPage
         else if (categoryId != null)
             filtered = _allItems.Where(i => i.MenuCategoryId == categoryId);
 
-        ItemsCollectionView.ItemsSource = new ObservableCollection<ItemViewModel>(filtered);
+        ItemsCollectionView.ItemsSource = filtered.ToList();
     }
 
     private void ItemsCollectionView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -612,6 +613,7 @@ public partial class SalesmanPage : ContentPage
     public class OrderHistoryPage : ContentPage
     {
         private readonly Action<SalesOrder>? _onEditOrder;
+        private CollectionView _listView;
 
         public OrderHistoryPage(Action<SalesOrder>? onEditOrder = null)
         {
@@ -619,12 +621,17 @@ public partial class SalesmanPage : ContentPage
             Title = "Order History";
             BackgroundColor = Color.FromArgb("#1A1A1A");
 
-            var db = new StockDbContext();
-            var orders = db.SalesOrders
-                .Include(so => so.Items)
-                .OrderByDescending(so => so.CreatedAt)
-                .Take(50)
-                .ToList();
+            // Load orders on background thread — don't block UI
+            var orders = Task.Run(() =>
+            {
+                using var db = new StockDbContext();
+                return db.SalesOrders
+                    .AsNoTracking()
+                    .Include(so => so.Items)
+                    .OrderByDescending(so => so.CreatedAt)
+                    .Take(50)
+                    .ToList();
+            }).GetAwaiter().GetResult();
 
             var listView = new CollectionView
             {

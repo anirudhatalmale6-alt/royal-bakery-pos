@@ -37,6 +37,7 @@ public partial class SalesHistoryPage : ContentPage
     private void LoadSales()
     {
         _sales = _db.Sales
+            .AsNoTracking()
             .Include(s => s.Items)
             .OrderByDescending(s => s.DateTime)
             .Take(50) // Last 50 sales
@@ -62,7 +63,7 @@ public partial class SalesHistoryPage : ContentPage
     {
         if (sender is Button btn && btn.CommandParameter is int saleId)
         {
-            var sale = _db.Sales.Include(s => s.Items).FirstOrDefault(s => s.Id == saleId);
+            var sale = _db.Sales.AsNoTracking().Include(s => s.Items).FirstOrDefault(s => s.Id == saleId);
             if (sale == null) return;
 
             // Show receipt on white background like real thermal paper
@@ -263,7 +264,7 @@ public partial class SalesHistoryPage : ContentPage
     {
         if (sender is Button btn && btn.CommandParameter is int saleId)
         {
-            var sale = _db.Sales.Include(s => s.Items).FirstOrDefault(s => s.Id == saleId);
+            var sale = _db.Sales.AsNoTracking().Include(s => s.Items).FirstOrDefault(s => s.Id == saleId);
             if (sale == null) return;
             await ReprintSale(sale);
         }

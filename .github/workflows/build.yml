@@ -60,42 +60,46 @@ jobs:
 
       - name: Zip artifacts
         run: |
-          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.30.1.zip
-          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.30.1.zip
-          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.30.1.zip
-          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.30.1.zip
-          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.30.1.zip
+          Compress-Archive -Path publish/cashier/* -DestinationPath RoyalBakeryCashier-v1.31.zip
+          Compress-Archive -Path publish/salesman/* -DestinationPath RoyalBakerySalesman-v1.31.zip
+          Compress-Archive -Path publish/api/* -DestinationPath RoyalBakeryAPI-v1.31.zip
+          Compress-Archive -Path publish/admin/* -DestinationPath RoyalBakeryAdmin-v1.31.zip
+          Compress-Archive -Path publish/restaurant/* -DestinationPath RoyalBakeryRestaurant-v1.31.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.30.1
-          name: v1.30.1 - Fix DB permission error on remote connections
+          tag_name: v1.31
+          name: v1.31 - Performance optimization for low-spec POS devices
           body: |
-            ## Changes in v1.30.1
+            ## Changes in v1.31
 
-            ### Bug Fix: "Create Database permission denied" error
-            - Admin and Restaurant panels no longer call EnsureCreated when using SQL authentication (remote DB connection)
-            - The database is already created by the API/Cashier on the server — remote terminals only need ApplyMigrations
-            - Fixes login failure on terminals connecting to a remote SQL Server with limited permissions
+            ### Performance Optimization for Celeron POS Machines
+            - All DB read queries now use AsNoTracking (faster reads, less memory)
+            - Reduced ObservableCollection allocation on category/search filtering
+            - Workstation GC mode (optimized for 4-8GB RAM devices)
+            - Connection pooling with Min Pool Size=2 for faster DB reconnects
+            - 15s query timeout for fast-fail on slow queries
+            - Order history loads on background thread (no UI freeze)
+            - ReadyToRun pre-compilation (already enabled, confirmed working)
 
-            ### Previous (v1.30)
+            ### Previous (v1.30.1)
+            - Fixed DB permission error on remote connections
             - Admin Excel export for Bakery + Restaurant items
             - Salesman order edit from history
-            - Full item name visibility in Cashier + Salesman
 
             ## Downloads
-            - **RoyalBakeryCashier-v1.30.1.zip** — Cashier terminal EXE
-            - **RoyalBakerySalesman-v1.30.1.zip** — Salesman terminal EXE
-            - **RoyalBakeryAPI-v1.30.1.zip** — API server
-            - **RoyalBakeryAdmin-v1.30.1.zip** — Admin Panel EXE
-            - **RoyalBakeryRestaurant-v1.30.1.zip** — Restaurant POS terminal EXE
+            - **RoyalBakeryCashier-v1.31.zip** — Cashier terminal EXE
+            - **RoyalBakerySalesman-v1.31.zip** — Salesman terminal EXE
+            - **RoyalBakeryAPI-v1.31.zip** — API server
+            - **RoyalBakeryAdmin-v1.31.zip** — Admin Panel EXE
+            - **RoyalBakeryRestaurant-v1.31.zip** — Restaurant POS terminal EXE
           files: |
-            RoyalBakeryCashier-v1.30.1.zip
-            RoyalBakerySalesman-v1.30.1.zip
-            RoyalBakeryAPI-v1.30.1.zip
-            RoyalBakeryAdmin-v1.30.1.zip
-            RoyalBakeryRestaurant-v1.30.1.zip
+            RoyalBakeryCashier-v1.31.zip
+            RoyalBakerySalesman-v1.31.zip
+            RoyalBakeryAPI-v1.31.zip
+            RoyalBakeryAdmin-v1.31.zip
+            RoyalBakeryRestaurant-v1.31.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
